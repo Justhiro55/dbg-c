@@ -8,7 +8,7 @@ use walkdir::WalkDir;
 
 #[derive(Parser)]
 #[command(name = "dbgc")]
-#[command(about = "Toggle debug printf statements in C code", long_about = None)]
+#[command(about = "dbgc recursively toggles debug printf statements in C/C++ code", long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -33,7 +33,6 @@ struct Match {
     file_path: PathBuf,
     line_number: usize,
     line_content: String,
-    is_commented: bool,
 }
 
 fn main() -> Result<()> {
@@ -69,10 +68,7 @@ fn process_path(path: &Path, uncomment: bool) -> Result<()> {
         std::collections::HashMap::new();
 
     for m in &matches {
-        files_map
-            .entry(m.file_path.clone())
-            .or_insert_with(Vec::new)
-            .push(m);
+        files_map.entry(m.file_path.clone()).or_default().push(m);
     }
 
     // Sort files by path for consistent display
@@ -99,7 +95,11 @@ fn process_path(path: &Path, uncomment: bool) -> Result<()> {
     // Ask for confirmation
     print!(
         "Do you want to {} these statements? (y/n): ",
-        if uncomment { "uncomment" } else { "comment out" }
+        if uncomment {
+            "uncomment"
+        } else {
+            "comment out"
+        }
     );
     io::stdout().flush()?;
 
@@ -121,7 +121,7 @@ fn find_debug_printfs(path: &Path, find_commented: bool) -> Result<Vec<Match>> {
 
     // Pattern to match printf-like functions with "debug" or "DEBUG" in the string
     let printf_pattern = Regex::new(
-        r"(printf|fprintf|sprintf|snprintf|printf_debug|dprintf)\s*\([^;]*?(debug|DEBUG)[^;]*?;"
+        r"(printf|fprintf|sprintf|snprintf|printf_debug|dprintf)\s*\([^;]*?(debug|DEBUG)[^;]*?;",
     )?;
 
     let comment_pattern = Regex::new(r"^\s*//")?;
@@ -158,7 +158,6 @@ fn find_debug_printfs(path: &Path, find_commented: bool) -> Result<Vec<Match>> {
                     file_path: file_path.clone(),
                     line_number: line_num + 1,
                     line_content: line.to_string(),
-                    is_commented,
                 });
             }
         }
@@ -173,10 +172,7 @@ fn apply_changes(matches: &[Match], uncomment: bool) -> Result<()> {
         std::collections::HashMap::new();
 
     for m in matches {
-        files_map
-            .entry(m.file_path.clone())
-            .or_insert_with(Vec::new)
-            .push(m);
+        files_map.entry(m.file_path.clone()).or_default().push(m);
     }
 
     for (file_path, file_matches) in files_map {

@@ -2,6 +2,7 @@
 
 `dbgc` (debug comment controller) is a command-line tool for toggling debug printf statements in C/C++ code. It recursively searches through your codebase to find debug logging statements and allows you to comment or uncomment them with a single command.
 
+[![CI](https://github.com/yourusername/dbgc/workflows/ci/badge.svg)](https://github.com/Justhiro55/dbgc/actions)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
 ### Features
