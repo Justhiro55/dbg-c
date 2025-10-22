@@ -125,9 +125,8 @@ fn find_debug_printfs(path: &Path, find_commented: bool) -> Result<Vec<Match>> {
     )?;
 
     // Pattern to match C++ streams with "debug" or "DEBUG"
-    let cpp_stream_pattern = Regex::new(
-        r"(std::cout|std::cerr|std::clog)\s*<<[^;]*?(debug|DEBUG)[^;]*?;",
-    )?;
+    let cpp_stream_pattern =
+        Regex::new(r"(std::cout|std::cerr|std::clog)\s*<<[^;]*?(debug|DEBUG)[^;]*?;")?;
 
     let comment_pattern = Regex::new(r"^\s*//")?;
 
@@ -155,7 +154,8 @@ fn find_debug_printfs(path: &Path, find_commented: bool) -> Result<Vec<Match>> {
 
         for (line_num, line) in content.lines().enumerate() {
             let is_commented = comment_pattern.is_match(line);
-            let has_debug_output = c_functions_pattern.is_match(line) || cpp_stream_pattern.is_match(line);
+            let has_debug_output =
+                c_functions_pattern.is_match(line) || cpp_stream_pattern.is_match(line);
 
             // Add to matches if it matches our search criteria
             if has_debug_output && is_commented == find_commented {
