@@ -70,7 +70,9 @@ Arguments:
 
 ### How it works
 
-`dbgc` searches for printf-family functions (printf, fprintf, sprintf, snprintf, dprintf, printf_debug) where the format string contains the keyword "debug" or "DEBUG" (case-sensitive).
+`dbgc` searches for C/C++ output functions where the string or stream contains the keyword "debug" or "DEBUG" (case-sensitive). This includes:
+- C standard I/O functions (printf family, puts family, write, perror)
+- C++ stream operators (std::cout, std::cerr, std::clog)
 
 **Supported file extensions:**
 - `.c`
@@ -81,12 +83,18 @@ Arguments:
 - `.cxx`
 
 **Detected functions:**
-- `printf()`
-- `fprintf()`
-- `sprintf()`
-- `snprintf()`
-- `dprintf()`
+
+C standard functions:
+- `printf()`, `fprintf()`, `sprintf()`, `snprintf()`, `dprintf()`
+- `puts()`, `fputs()`
+- `write()`
+- `perror()`
 - `printf_debug()`
+
+C++ streams:
+- `std::cout`
+- `std::cerr`
+- `std::clog`
 
 ### Examples
 

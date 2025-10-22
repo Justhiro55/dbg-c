@@ -119,9 +119,14 @@ fn process_path(path: &Path, uncomment: bool) -> Result<()> {
 fn find_debug_printfs(path: &Path, find_commented: bool) -> Result<Vec<Match>> {
     let mut matches = Vec::new();
 
-    // Pattern to match printf-like functions with "debug" or "DEBUG" in the string
-    let printf_pattern = Regex::new(
-        r"(printf|fprintf|sprintf|snprintf|printf_debug|dprintf)\s*\([^;]*?(debug|DEBUG)[^;]*?;",
+    // Pattern to match C printf-like functions with "debug" or "DEBUG" in the string
+    let c_functions_pattern = Regex::new(
+        r"(printf|fprintf|sprintf|snprintf|printf_debug|dprintf|puts|fputs|fputc|putchar|fputchar|write|perror)\s*\([^;]*?(debug|DEBUG)[^;]*?;",
+    )?;
+
+    // Pattern to match C++ streams with "debug" or "DEBUG"
+    let cpp_stream_pattern = Regex::new(
+        r"(std::cout|std::cerr|std::clog)\s*<<[^;]*?(debug|DEBUG)[^;]*?;",
     )?;
 
     let comment_pattern = Regex::new(r"^\s*//")?;
@@ -150,10 +155,10 @@ fn find_debug_printfs(path: &Path, find_commented: bool) -> Result<Vec<Match>> {
 
         for (line_num, line) in content.lines().enumerate() {
             let is_commented = comment_pattern.is_match(line);
-            let has_debug_printf = printf_pattern.is_match(line);
+            let has_debug_output = c_functions_pattern.is_match(line) || cpp_stream_pattern.is_match(line);
 
             // Add to matches if it matches our search criteria
-            if has_debug_printf && is_commented == find_commented {
+            if has_debug_output && is_commented == find_commented {
                 matches.push(Match {
                     file_path: file_path.clone(),
                     line_number: line_num + 1,
