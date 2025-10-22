@@ -2,7 +2,7 @@
 
 `dbgc` (debug comment controller) is a command-line tool for toggling debug printf statements in C/C++ code. It recursively searches through your codebase to find debug logging statements and allows you to comment or uncomment them with a single command.
 
-[![CI](https://github.com/yourusername/dbgc/workflows/ci/badge.svg)](https://github.com/Justhiro55/dbgc/actions)
+[![Build status](https://github.com/Justhiro55/dbg-c/workflows/ci/badge.svg)](https://github.com/Justhiro55/dbg-c/actions)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
 ### Features
@@ -29,20 +29,7 @@ $ dbgc off main.c
 ### Screenshot
 
 When you run `dbgc`, it displays all matching debug statements grouped by file:
-
-```
-Found 24 debug statement(s):
-
-sample/main.c
-14:    printf("debug: Testing add function with a=%d, b=%d\n", a, b);
-20:    fprintf(stderr, "DEBUG: Calculating factorial of %d\n", n);
-
-sample/utils/math_utils.c
-4:    printf("debug: gcd(%d, %d) called\n", a, b);
-10:    printf("DEBUG: Current values - a=%d, b=%d\n", a, b);
-
-Do you want to comment out these statements? (y/n):
-```
+<img width="510" height="398" alt="CleanShot 2025-10-22 at 11 40 07@2x" src="https://github.com/user-attachments/assets/c37704fd-cef6-4cd9-a454-977f59969690" />
 
 File names are displayed in **magenta**, line numbers in **green**, and debug keywords in **bold red**.
 
