@@ -8,10 +8,12 @@
 ### Features
 
 * **Fast and recursive** - Processes entire directory trees including subdirectories
-* **Interactive confirmation** - Shows all matches with syntax highlighting before making changes
+* **Interactive selection** - Choose specific statements to process with arrow keys and spacebar
 * **Safe and reversible** - Comment out debug logs for production, uncomment them for debugging
-* **Smart detection** - Automatically detects printf-family functions containing "debug" or "DEBUG" keywords
+* **Smart detection** - Automatically detects printf-family functions and C++ streams containing "debug" or "DEBUG" keywords
+* **Flexible filtering** - Use `--all` flag to detect all output functions, not just debug statements
 * **Syntax highlighting** - Color-coded output similar to ripgrep for easy reading
+* **Multiple modes** - Comment out, uncomment, or permanently delete debug statements
 
 ### Quick example
 
@@ -21,6 +23,12 @@ $ dbgc off
 
 # Uncomment all debug statements in a specific directory
 $ dbgc on src/
+
+# Interactively select which statements to comment out
+$ dbgc off --interactive src/
+
+# Comment out ALL output functions (not just debug)
+$ dbgc off --all src/
 
 # Delete all debug statements permanently
 $ dbgc delete src/
@@ -72,8 +80,10 @@ Arguments:
   [PATH]  Path to file or directory (defaults to current directory if not specified)
 
 Options:
-  -y, --yes   Skip confirmation prompt (non-interactive mode)
-  -h, --help  Print help
+  -y, --yes          Skip confirmation prompt
+  -a, --all          Detect all output functions, not just debug statements
+  -i, --interactive  Interactive mode for selecting specific statements
+  -h, --help         Print help
 ```
 
 ### How it works
@@ -159,6 +169,44 @@ Do you want to comment out these statements? (y/n): n
 Operation cancelled.
 ```
 
+#### Detect all output functions with --all flag
+
+By default, `dbgc` only detects output functions containing "debug" or "DEBUG" keywords. Use the `--all` flag to detect all output functions regardless of content:
+
+```bash
+# Comment out ALL printf/cout statements, not just debug ones
+dbgc off --all src/
+
+# This will detect:
+# - printf("debug: message") ← debug statement
+# - printf("Regular message") ← also detected with --all
+# - std::cout << "Any message" ← also detected with --all
+```
+
+This is useful for removing all logging before production builds.
+
+#### Interactive mode with --interactive flag
+
+Use interactive mode to selectively choose which statements to process:
+
+```bash
+# Interactively select which debug statements to comment out
+dbgc off --interactive src/
+
+# You'll see a list of all matches with:
+# - Arrow keys to navigate
+# - Space to toggle selection
+# - Enter to confirm
+# - Ctrl-C or q to cancel
+```
+
+Interactive mode works with all commands (`off`, `on`, `delete`) and can be combined with `--all`:
+
+```bash
+# Interactively select from ALL output functions
+dbgc off --interactive --all src/
+```
+
 ### Building
 
 ```bash
@@ -202,10 +250,12 @@ You can also test with the `sample/` directory which contains more comprehensive
 ### Why use dbgc?
 
 * **Speed up your workflow** - No need to manually search and comment debug statements
-* **Avoid mistakes** - Interactive confirmation prevents accidental changes
+* **Avoid mistakes** - Interactive selection and confirmation prevents accidental changes
 * **Clean commits** - Easily remove debug logs before committing
 * **Quick debugging** - Re-enable all debug logs when investigating issues
 * **Production cleanup** - Permanently delete debug statements with the delete command
+* **Selective control** - Use interactive mode to choose exactly which statements to process
+* **Comprehensive detection** - Use `--all` flag to find all output functions before releases
 
 ### Why not use dbgc?
 
