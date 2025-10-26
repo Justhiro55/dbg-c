@@ -23,6 +23,12 @@ enum Commands {
         /// Skip confirmation prompt
         #[arg(short, long)]
         yes: bool,
+        /// Detect all output functions, not just debug statements
+        #[arg(short, long)]
+        all: bool,
+        /// Interactive mode for selecting specific statements
+        #[arg(short, long)]
+        interactive: bool,
     },
     /// Uncomment debug printf statements
     On {
@@ -31,6 +37,12 @@ enum Commands {
         /// Skip confirmation prompt
         #[arg(short, long)]
         yes: bool,
+        /// Detect all output functions, not just debug statements
+        #[arg(short, long)]
+        all: bool,
+        /// Interactive mode for selecting specific statements
+        #[arg(short, long)]
+        interactive: bool,
     },
     /// Delete debug printf statements
     Delete {
@@ -39,6 +51,12 @@ enum Commands {
         /// Skip confirmation prompt
         #[arg(short, long)]
         yes: bool,
+        /// Detect all output functions, not just debug statements
+        #[arg(short, long)]
+        all: bool,
+        /// Interactive mode for selecting specific statements
+        #[arg(short, long)]
+        interactive: bool,
     },
 }
 
@@ -53,25 +71,46 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Off { path, yes } => {
+        Commands::Off {
+            path,
+            yes,
+            all,
+            interactive,
+        } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
-            process_path(&target_path, false, yes)?;
+            process_path(&target_path, false, yes, all, interactive)?;
         }
-        Commands::On { path, yes } => {
+        Commands::On {
+            path,
+            yes,
+            all,
+            interactive,
+        } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
-            process_path(&target_path, true, yes)?;
+            process_path(&target_path, true, yes, all, interactive)?;
         }
-        Commands::Delete { path, yes } => {
+        Commands::Delete {
+            path,
+            yes,
+            all,
+            interactive,
+        } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
-            process_path_delete(&target_path, yes)?;
+            process_path_delete(&target_path, yes, all, interactive)?;
         }
     }
 
     Ok(())
 }
 
-fn process_path(path: &Path, uncomment: bool, skip_confirm: bool) -> Result<()> {
-    let matches = find_debug_printfs(path, uncomment)?;
+fn process_path(
+    path: &Path,
+    uncomment: bool,
+    skip_confirm: bool,
+    detect_all: bool,
+    _interactive: bool,
+) -> Result<()> {
+    let matches = find_debug_printfs(path, uncomment, detect_all)?;
 
     if matches.is_empty() {
         println!("No matching debug statements found.");
@@ -137,17 +176,30 @@ fn process_path(path: &Path, uncomment: bool, skip_confirm: bool) -> Result<()> 
     Ok(())
 }
 
-fn find_debug_printfs(path: &Path, find_commented: bool) -> Result<Vec<Match>> {
+fn find_debug_printfs(path: &Path, find_commented: bool, detect_all: bool) -> Result<Vec<Match>> {
     let mut matches = Vec::new();
 
-    // Pattern to match C printf-like functions with "debug" or "DEBUG" in the string
-    let c_functions_pattern = Regex::new(
-        r"(printf|fprintf|sprintf|snprintf|printf_debug|dprintf|puts|fputs|fputc|putchar|fputchar|write|perror)\s*\([^;]*?(debug|DEBUG)[^;]*?;",
-    )?;
+    // Pattern to match C printf-like functions
+    let c_functions_pattern = if detect_all {
+        // Match all output functions regardless of content
+        Regex::new(
+            r"(printf|fprintf|sprintf|snprintf|printf_debug|dprintf|puts|fputs|fputc|putchar|fputchar|write|perror)\s*\([^;]*?;",
+        )?
+    } else {
+        // Match only those with "debug" or "DEBUG"
+        Regex::new(
+            r"(printf|fprintf|sprintf|snprintf|printf_debug|dprintf|puts|fputs|fputc|putchar|fputchar|write|perror)\s*\([^;]*?(debug|DEBUG)[^;]*?;",
+        )?
+    };
 
-    // Pattern to match C++ streams with "debug" or "DEBUG"
-    let cpp_stream_pattern =
-        Regex::new(r"(std::cout|std::cerr|std::clog)\s*<<[^;]*?(debug|DEBUG)[^;]*?;")?;
+    // Pattern to match C++ streams
+    let cpp_stream_pattern = if detect_all {
+        // Match all stream output regardless of content
+        Regex::new(r"(std::cout|std::cerr|std::clog)\s*<<[^;]*?;")?
+    } else {
+        // Match only those with "debug" or "DEBUG"
+        Regex::new(r"(std::cout|std::cerr|std::clog)\s*<<[^;]*?(debug|DEBUG)[^;]*?;")?
+    };
 
     let comment_pattern = Regex::new(r"^\s*//")?;
 
@@ -253,10 +305,15 @@ fn highlight_debug_keyword(line: &str) -> String {
     re.replace_all(line, "\x1b[1;31m$1\x1b[0m").to_string()
 }
 
-fn process_path_delete(path: &Path, skip_confirm: bool) -> Result<()> {
+fn process_path_delete(
+    path: &Path,
+    skip_confirm: bool,
+    detect_all: bool,
+    _interactive: bool,
+) -> Result<()> {
     // Find both commented and uncommented debug statements
-    let uncommented_matches = find_debug_printfs(path, false)?;
-    let commented_matches = find_debug_printfs(path, true)?;
+    let uncommented_matches = find_debug_printfs(path, false, detect_all)?;
+    let commented_matches = find_debug_printfs(path, true, detect_all)?;
 
     // Combine both lists
     let mut all_matches = uncommented_matches;
