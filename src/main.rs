@@ -26,6 +26,11 @@ enum Commands {
         /// Path to file or directory (defaults to current directory)
         path: Option<PathBuf>,
     },
+    /// Delete debug printf statements
+    Delete {
+        /// Path to file or directory (defaults to current directory)
+        path: Option<PathBuf>,
+    },
 }
 
 #[derive(Debug)]
@@ -46,6 +51,10 @@ fn main() -> Result<()> {
         Commands::On { path } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
             process_path(&target_path, true)?;
+        }
+        Commands::Delete { path } => {
+            let target_path = path.unwrap_or_else(|| PathBuf::from("."));
+            process_path_delete(&target_path)?;
         }
     }
 
@@ -230,4 +239,110 @@ fn highlight_debug_keyword(line: &str) -> String {
     // Highlight "debug" or "DEBUG" keywords in red
     let re = Regex::new(r"(debug|DEBUG)").unwrap();
     re.replace_all(line, "\x1b[1;31m$1\x1b[0m").to_string()
+}
+
+fn process_path_delete(path: &Path) -> Result<()> {
+    // Find both commented and uncommented debug statements
+    let uncommented_matches = find_debug_printfs(path, false)?;
+    let commented_matches = find_debug_printfs(path, true)?;
+
+    // Combine both lists
+    let mut all_matches = uncommented_matches;
+    all_matches.extend(commented_matches);
+
+    if all_matches.is_empty() {
+        println!("No matching debug statements found.");
+        return Ok(());
+    }
+
+    // Display all matches grouped by file
+    println!(
+        "\nFound {} debug statement(s) to delete:\n",
+        all_matches.len()
+    );
+
+    // Group matches by file
+    let mut files_map: std::collections::HashMap<PathBuf, Vec<&Match>> =
+        std::collections::HashMap::new();
+
+    for m in &all_matches {
+        files_map.entry(m.file_path.clone()).or_default().push(m);
+    }
+
+    // Sort files by path for consistent display
+    let mut sorted_files: Vec<_> = files_map.iter().collect();
+    sorted_files.sort_by_key(|(path, _)| path.as_path());
+
+    for (file_path, file_matches) in sorted_files {
+        // Display filename in color (magenta like ripgrep)
+        println!("\x1b[35m{}\x1b[0m", file_path.display());
+
+        // Sort matches by line number
+        let mut sorted_matches = file_matches.clone();
+        sorted_matches.sort_by_key(|m| m.line_number);
+
+        for m in sorted_matches {
+            // Line number in green, followed by colon and content with highlighted debug keyword
+            let highlighted = highlight_debug_keyword(&m.line_content);
+            println!("\x1b[32m{}\x1b[0m:{}", m.line_number, highlighted.trim());
+        }
+
+        println!(); // Empty line between files
+    }
+
+    // Ask for confirmation
+    print!("Do you want to delete these statements? (y/n): ");
+    io::stdout().flush()?;
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+
+    if input.trim().to_lowercase() == "y" {
+        delete_changes(&all_matches)?;
+        println!("\nSuccessfully deleted {} statement(s).", all_matches.len());
+    } else {
+        println!("\nOperation cancelled.");
+    }
+
+    Ok(())
+}
+
+fn delete_changes(matches: &[Match]) -> Result<()> {
+    // Group matches by file
+    let mut files_map: std::collections::HashMap<PathBuf, Vec<&Match>> =
+        std::collections::HashMap::new();
+
+    for m in matches {
+        files_map.entry(m.file_path.clone()).or_default().push(m);
+    }
+
+    for (file_path, file_matches) in files_map {
+        let content = fs::read_to_string(&file_path)?;
+        let lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
+
+        // Sort by line number in reverse order to avoid index shifting
+        let mut sorted_matches = file_matches;
+        sorted_matches.sort_by(|a, b| b.line_number.cmp(&a.line_number));
+
+        // Collect line numbers to delete
+        let mut lines_to_delete: std::collections::HashSet<usize> =
+            std::collections::HashSet::new();
+        for m in sorted_matches {
+            lines_to_delete.insert(m.line_number - 1);
+        }
+
+        // Filter out lines to delete
+        let new_lines: Vec<String> = lines
+            .into_iter()
+            .enumerate()
+            .filter(|(idx, _)| !lines_to_delete.contains(idx))
+            .map(|(_, line)| line)
+            .collect();
+
+        let new_content = new_lines.join("\n") + "\n";
+        fs::write(&file_path, new_content)
+            .with_context(|| format!("Failed to write file: {}", file_path.display()))?;
+    }
+
+    Ok(())
 }

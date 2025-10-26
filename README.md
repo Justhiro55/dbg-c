@@ -22,6 +22,9 @@ $ dbgc off
 # Uncomment all debug statements in a specific directory
 $ dbgc on src/
 
+# Delete all debug statements permanently
+$ dbgc delete src/
+
 # Process a single file
 $ dbgc off main.c
 ```
@@ -61,8 +64,9 @@ sudo cp target/release/dbgc /usr/local/bin/
 dbgc <COMMAND> [PATH]
 
 Commands:
-  off   Comment out debug printf statements
-  on    Uncomment debug printf statements
+  off      Comment out debug printf statements
+  on       Uncomment debug printf statements
+  delete   Delete debug printf statements permanently
 
 Arguments:
   [PATH]  Path to file or directory (defaults to current directory if not specified)
@@ -122,6 +126,14 @@ dbgc on src/
 dbgc off main.c
 ```
 
+#### Delete debug logs permanently
+
+```bash
+dbgc delete src/
+```
+
+**Warning**: This permanently removes debug statement lines from your files. Use with caution!
+
 #### Cancel operation
 
 When prompted, type `n` to cancel without making changes:
@@ -177,6 +189,7 @@ You can also test with the `sample/` directory which contains more comprehensive
 * **Avoid mistakes** - Interactive confirmation prevents accidental changes
 * **Clean commits** - Easily remove debug logs before committing
 * **Quick debugging** - Re-enable all debug logs when investigating issues
+* **Production cleanup** - Permanently delete debug statements with the delete command
 
 ### Why not use dbgc?
 
