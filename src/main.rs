@@ -20,16 +20,25 @@ enum Commands {
     Off {
         /// Path to file or directory (defaults to current directory)
         path: Option<PathBuf>,
+        /// Skip confirmation prompt
+        #[arg(short, long)]
+        yes: bool,
     },
     /// Uncomment debug printf statements
     On {
         /// Path to file or directory (defaults to current directory)
         path: Option<PathBuf>,
+        /// Skip confirmation prompt
+        #[arg(short, long)]
+        yes: bool,
     },
     /// Delete debug printf statements
     Delete {
         /// Path to file or directory (defaults to current directory)
         path: Option<PathBuf>,
+        /// Skip confirmation prompt
+        #[arg(short, long)]
+        yes: bool,
     },
 }
 
@@ -44,24 +53,24 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Off { path } => {
+        Commands::Off { path, yes } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
-            process_path(&target_path, false)?;
+            process_path(&target_path, false, yes)?;
         }
-        Commands::On { path } => {
+        Commands::On { path, yes } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
-            process_path(&target_path, true)?;
+            process_path(&target_path, true, yes)?;
         }
-        Commands::Delete { path } => {
+        Commands::Delete { path, yes } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
-            process_path_delete(&target_path)?;
+            process_path_delete(&target_path, yes)?;
         }
     }
 
     Ok(())
 }
 
-fn process_path(path: &Path, uncomment: bool) -> Result<()> {
+fn process_path(path: &Path, uncomment: bool, skip_confirm: bool) -> Result<()> {
     let matches = find_debug_printfs(path, uncomment)?;
 
     if matches.is_empty() {
@@ -101,26 +110,29 @@ fn process_path(path: &Path, uncomment: bool) -> Result<()> {
         println!(); // Empty line between files
     }
 
-    // Ask for confirmation
-    print!(
-        "Do you want to {} these statements? (y/n): ",
-        if uncomment {
-            "uncomment"
-        } else {
-            "comment out"
+    // Ask for confirmation unless --yes flag is set
+    if !skip_confirm {
+        print!(
+            "Do you want to {} these statements? (y/n): ",
+            if uncomment {
+                "uncomment"
+            } else {
+                "comment out"
+            }
+        );
+        io::stdout().flush()?;
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+
+        if input.trim().to_lowercase() != "y" {
+            println!("\nOperation cancelled.");
+            return Ok(());
         }
-    );
-    io::stdout().flush()?;
-
-    let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
-
-    if input.trim().to_lowercase() == "y" {
-        apply_changes(&matches, uncomment)?;
-        println!("\nSuccessfully processed {} statement(s).", matches.len());
-    } else {
-        println!("\nOperation cancelled.");
     }
+
+    apply_changes(&matches, uncomment)?;
+    println!("\nSuccessfully processed {} statement(s).", matches.len());
 
     Ok(())
 }
@@ -241,7 +253,7 @@ fn highlight_debug_keyword(line: &str) -> String {
     re.replace_all(line, "\x1b[1;31m$1\x1b[0m").to_string()
 }
 
-fn process_path_delete(path: &Path) -> Result<()> {
+fn process_path_delete(path: &Path, skip_confirm: bool) -> Result<()> {
     // Find both commented and uncommented debug statements
     let uncommented_matches = find_debug_printfs(path, false)?;
     let commented_matches = find_debug_printfs(path, true)?;
@@ -290,19 +302,22 @@ fn process_path_delete(path: &Path) -> Result<()> {
         println!(); // Empty line between files
     }
 
-    // Ask for confirmation
-    print!("Do you want to delete these statements? (y/n): ");
-    io::stdout().flush()?;
+    // Ask for confirmation unless --yes flag is set
+    if !skip_confirm {
+        print!("Do you want to delete these statements? (y/n): ");
+        io::stdout().flush()?;
 
-    let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
 
-    if input.trim().to_lowercase() == "y" {
-        delete_changes(&all_matches)?;
-        println!("\nSuccessfully deleted {} statement(s).", all_matches.len());
-    } else {
-        println!("\nOperation cancelled.");
+        if input.trim().to_lowercase() != "y" {
+            println!("\nOperation cancelled.");
+            return Ok(());
+        }
     }
+
+    delete_changes(&all_matches)?;
+    println!("\nSuccessfully deleted {} statement(s).", all_matches.len());
 
     Ok(())
 }

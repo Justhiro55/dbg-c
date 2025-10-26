@@ -61,7 +61,7 @@ sudo cp target/release/dbgc /usr/local/bin/
 ### Usage
 
 ```
-dbgc <COMMAND> [PATH]
+dbgc <COMMAND> [OPTIONS] [PATH]
 
 Commands:
   off      Comment out debug printf statements
@@ -70,6 +70,10 @@ Commands:
 
 Arguments:
   [PATH]  Path to file or directory (defaults to current directory if not specified)
+
+Options:
+  -y, --yes   Skip confirmation prompt (non-interactive mode)
+  -h, --help  Print help
 ```
 
 ### How it works
@@ -133,6 +137,18 @@ dbgc delete src/
 ```
 
 **Warning**: This permanently removes debug statement lines from your files. Use with caution!
+
+#### Non-interactive mode (skip confirmation)
+
+Use `-y` or `--yes` flag to skip the confirmation prompt, useful for scripts and automation:
+
+```bash
+# Comment out without confirmation
+dbgc off --yes
+
+# Delete without confirmation (use with caution!)
+dbgc delete -y src/
+```
 
 #### Cancel operation
 
