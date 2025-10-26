@@ -1,5 +1,7 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
+use console::Style;
+use dialoguer::{theme::ColorfulTheme, MultiSelect};
 use regex::Regex;
 use std::fs;
 use std::io::{self, Write};
@@ -60,7 +62,7 @@ enum Commands {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Match {
     file_path: PathBuf,
     line_number: usize,
@@ -108,7 +110,7 @@ fn process_path(
     uncomment: bool,
     skip_confirm: bool,
     detect_all: bool,
-    _interactive: bool,
+    interactive: bool,
 ) -> Result<()> {
     let matches = find_debug_printfs(path, uncomment, detect_all)?;
 
@@ -117,61 +119,47 @@ fn process_path(
         return Ok(());
     }
 
-    // Display all matches grouped by file
-    println!("\nFound {} debug statement(s):\n", matches.len());
+    // Interactive mode: let user select specific statements
+    let selected_matches = if interactive {
+        select_statements_interactive(&matches)?
+    } else {
+        // Non-interactive: display and confirm
+        display_matches(&matches);
 
-    // Group matches by file
-    let mut files_map: std::collections::HashMap<PathBuf, Vec<&Match>> =
-        std::collections::HashMap::new();
+        // Ask for confirmation unless --yes flag is set
+        if !skip_confirm {
+            print!(
+                "Do you want to {} these statements? (y/n): ",
+                if uncomment {
+                    "uncomment"
+                } else {
+                    "comment out"
+                }
+            );
+            io::stdout().flush()?;
 
-    for m in &matches {
-        files_map.entry(m.file_path.clone()).or_default().push(m);
-    }
+            let mut input = String::new();
+            io::stdin().read_line(&mut input)?;
 
-    // Sort files by path for consistent display
-    let mut sorted_files: Vec<_> = files_map.iter().collect();
-    sorted_files.sort_by_key(|(path, _)| path.as_path());
-
-    for (file_path, file_matches) in sorted_files {
-        // Display filename in color (magenta like ripgrep)
-        println!("\x1b[35m{}\x1b[0m", file_path.display());
-
-        // Sort matches by line number
-        let mut sorted_matches = file_matches.clone();
-        sorted_matches.sort_by_key(|m| m.line_number);
-
-        for m in sorted_matches {
-            // Line number in green, followed by colon and content with highlighted debug keyword
-            let highlighted = highlight_debug_keyword(&m.line_content);
-            println!("\x1b[32m{}\x1b[0m:{}", m.line_number, highlighted.trim());
-        }
-
-        println!(); // Empty line between files
-    }
-
-    // Ask for confirmation unless --yes flag is set
-    if !skip_confirm {
-        print!(
-            "Do you want to {} these statements? (y/n): ",
-            if uncomment {
-                "uncomment"
-            } else {
-                "comment out"
+            if input.trim().to_lowercase() != "y" {
+                println!("\nOperation cancelled.");
+                return Ok(());
             }
-        );
-        io::stdout().flush()?;
-
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-
-        if input.trim().to_lowercase() != "y" {
-            println!("\nOperation cancelled.");
-            return Ok(());
         }
+
+        matches
+    };
+
+    if selected_matches.is_empty() {
+        println!("\nNo statements selected.");
+        return Ok(());
     }
 
-    apply_changes(&matches, uncomment)?;
-    println!("\nSuccessfully processed {} statement(s).", matches.len());
+    apply_changes(&selected_matches, uncomment)?;
+    println!(
+        "\nSuccessfully processed {} statement(s).",
+        selected_matches.len()
+    );
 
     Ok(())
 }
@@ -305,36 +293,15 @@ fn highlight_debug_keyword(line: &str) -> String {
     re.replace_all(line, "\x1b[1;31m$1\x1b[0m").to_string()
 }
 
-fn process_path_delete(
-    path: &Path,
-    skip_confirm: bool,
-    detect_all: bool,
-    _interactive: bool,
-) -> Result<()> {
-    // Find both commented and uncommented debug statements
-    let uncommented_matches = find_debug_printfs(path, false, detect_all)?;
-    let commented_matches = find_debug_printfs(path, true, detect_all)?;
-
-    // Combine both lists
-    let mut all_matches = uncommented_matches;
-    all_matches.extend(commented_matches);
-
-    if all_matches.is_empty() {
-        println!("No matching debug statements found.");
-        return Ok(());
-    }
-
+fn display_matches(matches: &[Match]) {
     // Display all matches grouped by file
-    println!(
-        "\nFound {} debug statement(s) to delete:\n",
-        all_matches.len()
-    );
+    println!("\nFound {} debug statement(s):\n", matches.len());
 
     // Group matches by file
     let mut files_map: std::collections::HashMap<PathBuf, Vec<&Match>> =
         std::collections::HashMap::new();
 
-    for m in &all_matches {
+    for m in matches {
         files_map.entry(m.file_path.clone()).or_default().push(m);
     }
 
@@ -358,23 +325,105 @@ fn process_path_delete(
 
         println!(); // Empty line between files
     }
+}
 
-    // Ask for confirmation unless --yes flag is set
-    if !skip_confirm {
-        print!("Do you want to delete these statements? (y/n): ");
-        io::stdout().flush()?;
+fn select_statements_interactive(matches: &[Match]) -> Result<Vec<Match>> {
+    println!("\nFound {} debug statement(s)\n", matches.len());
 
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
+    // Create display items for selection
+    let items: Vec<String> = matches
+        .iter()
+        .map(|m| {
+            let file_style = Style::new().magenta();
+            let line_style = Style::new().green();
+            format!(
+                "{} {}:{}",
+                file_style.apply_to(m.file_path.display()),
+                line_style.apply_to(m.line_number),
+                m.line_content.trim()
+            )
+        })
+        .collect();
 
-        if input.trim().to_lowercase() != "y" {
-            println!("\nOperation cancelled.");
-            return Ok(());
-        }
+    println!(
+        "Use arrow keys to navigate, Space to toggle, Enter to confirm, Ctrl-C or q to cancel\n"
+    );
+
+    let selections = MultiSelect::with_theme(&ColorfulTheme::default())
+        .items(&items)
+        .interact_opt()?;
+
+    if let Some(selected_indices) = selections {
+        let selected: Vec<Match> = selected_indices
+            .iter()
+            .map(|&i| matches[i].clone())
+            .collect();
+        Ok(selected)
+    } else {
+        // User cancelled (Ctrl-C or Esc)
+        println!("\nOperation cancelled.");
+        Ok(vec![])
+    }
+}
+
+fn process_path_delete(
+    path: &Path,
+    skip_confirm: bool,
+    detect_all: bool,
+    interactive: bool,
+) -> Result<()> {
+    // Find both commented and uncommented debug statements
+    let uncommented_matches = find_debug_printfs(path, false, detect_all)?;
+    let commented_matches = find_debug_printfs(path, true, detect_all)?;
+
+    // Combine both lists
+    let mut all_matches = uncommented_matches;
+    all_matches.extend(commented_matches);
+
+    if all_matches.is_empty() {
+        println!("No matching debug statements found.");
+        return Ok(());
     }
 
-    delete_changes(&all_matches)?;
-    println!("\nSuccessfully deleted {} statement(s).", all_matches.len());
+    // Interactive mode: let user select specific statements
+    let selected_matches = if interactive {
+        println!("Select statements to DELETE:");
+        select_statements_interactive(&all_matches)?
+    } else {
+        // Non-interactive: display and confirm
+        println!(
+            "\nFound {} debug statement(s) to delete:\n",
+            all_matches.len()
+        );
+        display_matches(&all_matches);
+
+        // Ask for confirmation unless --yes flag is set
+        if !skip_confirm {
+            print!("Do you want to delete these statements? (y/n): ");
+            io::stdout().flush()?;
+
+            let mut input = String::new();
+            io::stdin().read_line(&mut input)?;
+
+            if input.trim().to_lowercase() != "y" {
+                println!("\nOperation cancelled.");
+                return Ok(());
+            }
+        }
+
+        all_matches
+    };
+
+    if selected_matches.is_empty() {
+        println!("\nNo statements selected.");
+        return Ok(());
+    }
+
+    delete_changes(&selected_matches)?;
+    println!(
+        "\nSuccessfully deleted {} statement(s).",
+        selected_matches.len()
+    );
 
     Ok(())
 }
