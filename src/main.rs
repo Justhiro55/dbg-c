@@ -17,7 +17,7 @@ fn main() -> Result<()> {
             dry_run,
         } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
-            process_path(&target_path, false, yes, all, interactive, dry_run)?;
+            process_path(&target_path, true, yes, all, interactive, dry_run)?;
         }
         Commands::On {
             path,
@@ -27,7 +27,7 @@ fn main() -> Result<()> {
             dry_run,
         } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
-            process_path(&target_path, true, yes, all, interactive, dry_run)?;
+            process_path(&target_path, false, yes, all, interactive, dry_run)?;
         }
         Commands::Delete {
             path,
