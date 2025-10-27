@@ -11,7 +11,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Comment out debug printf statements
+    /// Uncomment debug printf statements (enable debug output)
     Off {
         /// Path to file or directory (defaults to current directory)
         path: Option<PathBuf>,
@@ -28,7 +28,7 @@ pub enum Commands {
         #[arg(short = 'd', long)]
         dry_run: bool,
     },
-    /// Uncomment debug printf statements
+    /// Comment out debug printf statements (disable debug output)
     On {
         /// Path to file or directory (defaults to current directory)
         path: Option<PathBuf>,

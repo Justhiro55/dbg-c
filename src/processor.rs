@@ -33,9 +33,9 @@ pub fn process_path(
             print!(
                 "Do you want to {} these statements? (y/n): ",
                 if uncomment {
-                    "uncomment"
+                    "enable (uncomment)"
                 } else {
-                    "comment out"
+                    "disable (comment out)"
                 }
             );
             io::stdout().flush()?;
@@ -61,9 +61,9 @@ pub fn process_path(
         println!(
             "\n[DRY RUN] Would {} {} statement(s).",
             if uncomment {
-                "uncomment"
+                "enable (uncomment)"
             } else {
-                "comment out"
+                "disable (comment out)"
             },
             selected_matches.len()
         );
