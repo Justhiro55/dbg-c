@@ -12,6 +12,7 @@ pub fn process_path(
     skip_confirm: bool,
     detect_all: bool,
     interactive: bool,
+    dry_run: bool,
 ) -> Result<()> {
     let matches = find_debug_printfs(path, uncomment, detect_all)?;
 
@@ -27,8 +28,8 @@ pub fn process_path(
         // Non-interactive: display and confirm
         display_matches(&matches);
 
-        // Ask for confirmation unless --yes flag is set
-        if !skip_confirm {
+        // Ask for confirmation unless --yes or --dry-run flag is set
+        if !skip_confirm && !dry_run {
             print!(
                 "Do you want to {} these statements? (y/n): ",
                 if uncomment {
@@ -56,11 +57,23 @@ pub fn process_path(
         return Ok(());
     }
 
-    apply_changes(&selected_matches, uncomment)?;
-    println!(
-        "\nSuccessfully processed {} statement(s).",
-        selected_matches.len()
-    );
+    if dry_run {
+        println!(
+            "\n[DRY RUN] Would {} {} statement(s).",
+            if uncomment {
+                "uncomment"
+            } else {
+                "comment out"
+            },
+            selected_matches.len()
+        );
+    } else {
+        apply_changes(&selected_matches, uncomment)?;
+        println!(
+            "\nSuccessfully processed {} statement(s).",
+            selected_matches.len()
+        );
+    }
 
     Ok(())
 }
@@ -70,6 +83,7 @@ pub fn process_path_delete(
     skip_confirm: bool,
     detect_all: bool,
     interactive: bool,
+    dry_run: bool,
 ) -> Result<()> {
     // Find both commented and uncommented debug statements
     let uncommented_matches = find_debug_printfs(path, false, detect_all)?;
@@ -96,8 +110,8 @@ pub fn process_path_delete(
         );
         display_matches(&all_matches);
 
-        // Ask for confirmation unless --yes flag is set
-        if !skip_confirm {
+        // Ask for confirmation unless --yes or --dry-run flag is set
+        if !skip_confirm && !dry_run {
             print!("Do you want to delete these statements? (y/n): ");
             io::stdout().flush()?;
 
@@ -118,11 +132,18 @@ pub fn process_path_delete(
         return Ok(());
     }
 
-    delete_changes(&selected_matches)?;
-    println!(
-        "\nSuccessfully deleted {} statement(s).",
-        selected_matches.len()
-    );
+    if dry_run {
+        println!(
+            "\n[DRY RUN] Would delete {} statement(s).",
+            selected_matches.len()
+        );
+    } else {
+        delete_changes(&selected_matches)?;
+        println!(
+            "\nSuccessfully deleted {} statement(s).",
+            selected_matches.len()
+        );
+    }
 
     Ok(())
 }

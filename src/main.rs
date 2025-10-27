@@ -14,27 +14,30 @@ fn main() -> Result<()> {
             yes,
             all,
             interactive,
+            dry_run,
         } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
-            process_path(&target_path, false, yes, all, interactive)?;
+            process_path(&target_path, false, yes, all, interactive, dry_run)?;
         }
         Commands::On {
             path,
             yes,
             all,
             interactive,
+            dry_run,
         } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
-            process_path(&target_path, true, yes, all, interactive)?;
+            process_path(&target_path, true, yes, all, interactive, dry_run)?;
         }
         Commands::Delete {
             path,
             yes,
             all,
             interactive,
+            dry_run,
         } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
-            process_path_delete(&target_path, yes, all, interactive)?;
+            process_path_delete(&target_path, yes, all, interactive, dry_run)?;
         }
     }
 

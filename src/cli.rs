@@ -24,6 +24,9 @@ pub enum Commands {
         /// Interactive mode for selecting specific statements
         #[arg(short, long)]
         interactive: bool,
+        /// Dry run mode - show what would be changed without modifying files
+        #[arg(short = 'd', long)]
+        dry_run: bool,
     },
     /// Uncomment debug printf statements
     On {
@@ -38,6 +41,9 @@ pub enum Commands {
         /// Interactive mode for selecting specific statements
         #[arg(short, long)]
         interactive: bool,
+        /// Dry run mode - show what would be changed without modifying files
+        #[arg(short = 'd', long)]
+        dry_run: bool,
     },
     /// Delete debug printf statements
     Delete {
@@ -52,5 +58,8 @@ pub enum Commands {
         /// Interactive mode for selecting specific statements
         #[arg(short, long)]
         interactive: bool,
+        /// Dry run mode - show what would be changed without modifying files
+        #[arg(short = 'd', long)]
+        dry_run: bool,
     },
 }
