@@ -3,7 +3,23 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "flop")]
-#[command(about = "flop recursively toggles debug printf statements in C/C++ code", long_about = None)]
+#[command(about = "flop recursively toggles debug printf statements in C/C++ code")]
+#[command(long_about = "\
+flop recursively toggles debug printf statements in C/C++ code
+
+EXAMPLES:
+    flop off                      Enable debug output in current directory
+    flop on src/                  Disable debug output in src/
+    flop off --dry-run src/       Preview changes without modifying files
+    flop off --interactive src/   Interactively select statements
+    flop delete --yes src/        Delete debug statements without confirmation
+
+COMMON OPTIONS:
+    -y, --yes          Skip confirmation prompt
+    -a, --all          Detect all output functions, not just debug statements
+    -i, --interactive  Interactive mode for selecting specific statements
+    -d, --dry-run      Dry run mode - show what would be changed without modifying files
+")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
