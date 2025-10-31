@@ -93,6 +93,7 @@ impl App {
             table_state,
             scroll_state,
             selected,
+            row_to_match: Vec::new(), // Will be populated in ui()
         }
     }
 
@@ -173,40 +174,59 @@ impl App {
     }
 
     fn next(&mut self) {
-        let i = match self.table_state.selected() {
-            Some(i) => {
-                if i >= self.matches.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
+        let current = self.table_state.selected().unwrap_or(0);
+        let max_rows = self.row_to_match.len();
+
+        // Find next selectable row (not a separator)
+        let mut next_row = current + 1;
+        loop {
+            if next_row >= max_rows {
+                next_row = 0;
             }
-            None => 0,
-        };
-        self.table_state.select(Some(i));
-        self.scroll_state = self.scroll_state.position(i);
+            if self.row_to_match.get(next_row).and_then(|&x| x).is_some() {
+                break;
+            }
+            next_row += 1;
+            if next_row == current {
+                break; // Avoid infinite loop
+            }
+        }
+
+        self.table_state.select(Some(next_row));
+        self.scroll_state = self.scroll_state.position(next_row);
     }
 
     fn previous(&mut self) {
-        let i = match self.table_state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.matches.len() - 1
-                } else {
-                    i - 1
-                }
+        let current = self.table_state.selected().unwrap_or(0);
+        let max_rows = self.row_to_match.len();
+
+        // Find previous selectable row (not a separator)
+        let mut prev_row = if current == 0 { max_rows - 1 } else { current - 1 };
+        loop {
+            if self.row_to_match.get(prev_row).and_then(|&x| x).is_some() {
+                break;
             }
-            None => 0,
-        };
-        self.table_state.select(Some(i));
-        self.scroll_state = self.scroll_state.position(i);
+            if prev_row == 0 {
+                prev_row = max_rows - 1;
+            } else {
+                prev_row -= 1;
+            }
+            if prev_row == current {
+                break; // Avoid infinite loop
+            }
+        }
+
+        self.table_state.select(Some(prev_row));
+        self.scroll_state = self.scroll_state.position(prev_row);
     }
 
     fn toggle_current(&mut self) {
-        if let Some(i) = self.table_state.selected() {
-            self.selected[i] = !self.selected[i];
-            // Move to next item after toggling
-            self.next();
+        if let Some(row_idx) = self.table_state.selected() {
+            if let Some(Some(match_idx)) = self.row_to_match.get(row_idx) {
+                self.selected[*match_idx] = !self.selected[*match_idx];
+                // Move to next item after toggling
+                self.next();
+            }
         }
     }
 
@@ -242,6 +262,7 @@ impl App {
 
         // Create table rows with file separators
         let mut rows: Vec<Row> = Vec::new();
+        let mut row_to_match: Vec<Option<usize>> = Vec::new();
         let mut prev_file: Option<PathBuf> = None;
 
         for (i, m) in self.matches.iter().enumerate() {
@@ -267,6 +288,7 @@ impl App {
                         Row::new(vec![checkbox_sep.to_string(), file_sep, line_sep.to_string(), code_sep])
                             .style(Style::default().fg(Color::DarkGray)),
                     );
+                    row_to_match.push(None); // Separator row, not selectable
                 }
             }
             prev_file = Some(m.file_path.clone());
@@ -285,7 +307,11 @@ impl App {
                 m.line_number.to_string(),
                 m.line_content.trim().to_string(),
             ]));
+            row_to_match.push(Some(i)); // Map this row to match index i
         }
+
+        // Store mapping for navigation
+        self.row_to_match = row_to_match;
 
         let selected_count = self.selected.iter().filter(|&&s| s).count();
         let total = self.matches.len();
