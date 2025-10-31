@@ -1,8 +1,7 @@
 use anyhow::Result;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
     backend::CrosstermBackend,
@@ -97,18 +96,24 @@ impl App {
     }
 
     fn run(&mut self) -> Result<Vec<Match>> {
-        // Setup terminal
+        // Setup terminal with inline viewport (keeps CLI history)
         enable_raw_mode()?;
-        let mut stdout = io::stdout();
-        execute!(stdout, EnterAlternateScreen)?;
+        let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
-        let mut terminal = Terminal::new(backend)?;
+
+        // Use inline mode to preserve terminal history
+        let height = (self.matches.len() as u16 + 6).min(30); // +6 for borders and headers
+        let mut terminal = Terminal::with_options(
+            backend,
+            ratatui::TerminalOptions {
+                viewport: ratatui::Viewport::Inline(height),
+            },
+        )?;
 
         let result = self.run_app(&mut terminal);
 
-        // Restore terminal
+        // Restore terminal (no need for LeaveAlternateScreen in inline mode)
         disable_raw_mode()?;
-        execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
         terminal.show_cursor()?;
 
         result
