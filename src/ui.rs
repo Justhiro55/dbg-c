@@ -204,6 +204,8 @@ impl App {
     fn toggle_current(&mut self) {
         if let Some(i) = self.table_state.selected() {
             self.selected[i] = !self.selected[i];
+            // Move to next item after toggling
+            self.next();
         }
     }
 
