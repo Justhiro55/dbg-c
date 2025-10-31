@@ -76,6 +76,7 @@ struct App {
     table_state: TableState,
     scroll_state: ScrollbarState,
     selected: Vec<bool>, // Track which items are selected
+    row_to_match: Vec<Option<usize>>, // Maps table row index to match index (None for separators)
 }
 
 impl App {
@@ -235,28 +236,56 @@ impl App {
             .unwrap_or(20)
             .min(40);
 
-        // Create table rows
-        let rows: Vec<Row> = self
-            .matches
-            .iter()
-            .enumerate()
-            .map(|(i, m)| {
-                let checkbox = if self.selected[i] { "[✓]" } else { "[ ]" };
-                let file_str = m.file_path.display().to_string();
-                let file_display = if file_str.len() > max_file_width {
-                    format!("...{}", &file_str[file_str.len() - max_file_width + 3..])
-                } else {
-                    file_str
-                };
+        // Calculate separator width (table width minus borders and right margin)
+        let table_width = chunks[0].width.saturating_sub(2) as usize; // Subtract left/right borders
+        let separator_width = table_width.saturating_sub(3); // Right margin of 3
 
-                Row::new(vec![
-                    checkbox.to_string(),
-                    file_display,
-                    m.line_number.to_string(),
-                    m.line_content.trim().to_string(),
-                ])
-            })
-            .collect();
+        // Create table rows with file separators
+        let mut rows: Vec<Row> = Vec::new();
+        let mut prev_file: Option<PathBuf> = None;
+
+        for (i, m) in self.matches.iter().enumerate() {
+            // Add separator line when file changes
+            if let Some(ref prev) = prev_file {
+                if prev != &m.file_path {
+                    // Add a separator row spanning all columns
+                    // Each column gets its portion of the line
+                    let checkbox_sep = "────"; // 4 chars to match checkbox + space
+                    let file_sep = "─".repeat(max_file_width + 2);
+                    let line_sep = "──────";
+
+                    // Calculate code separator length to fill remaining width
+                    let used_width = checkbox_sep.len() + file_sep.len() + line_sep.len();
+                    let code_sep_len = if separator_width > used_width {
+                        separator_width - used_width
+                    } else {
+                        50 // Minimum fallback
+                    };
+                    let code_sep = "─".repeat(code_sep_len);
+
+                    rows.push(
+                        Row::new(vec![checkbox_sep.to_string(), file_sep, line_sep.to_string(), code_sep])
+                            .style(Style::default().fg(Color::DarkGray)),
+                    );
+                }
+            }
+            prev_file = Some(m.file_path.clone());
+
+            let checkbox = if self.selected[i] { "[✓] " } else { "[ ] " };
+            let file_str = m.file_path.display().to_string();
+            let file_display = if file_str.len() > max_file_width {
+                format!("...{}", &file_str[file_str.len() - max_file_width + 3..])
+            } else {
+                file_str
+            };
+
+            rows.push(Row::new(vec![
+                checkbox.to_string(),
+                file_display,
+                m.line_number.to_string(),
+                m.line_content.trim().to_string(),
+            ]));
+        }
 
         let selected_count = self.selected.iter().filter(|&&s| s).count();
         let total = self.matches.len();
@@ -267,7 +296,7 @@ impl App {
         let table = Table::new(
             rows,
             [
-                Constraint::Length(3),                  // Checkbox
+                Constraint::Length(4),                  // Checkbox + space
                 Constraint::Length(max_file_width as u16 + 2), // File
                 Constraint::Length(6),                  // Line
                 Constraint::Min(20),                    // Code
@@ -280,7 +309,8 @@ impl App {
         )
         .block(Block::default().borders(Borders::ALL).title(title))
         .row_highlight_style(Style::default().bg(Color::DarkGray).add_modifier(Modifier::BOLD))
-        .highlight_spacing(HighlightSpacing::Always);
+        .highlight_spacing(HighlightSpacing::Always)
+        .column_spacing(0); // Remove spacing between columns
 
         f.render_stateful_widget(table, chunks[0], &mut self.table_state);
 
