@@ -2,8 +2,8 @@ use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
-use dbgc::cli::{Cli, Commands};
-use dbgc::processor::{process_path, process_path_delete};
+use flop::cli::{Cli, Commands};
+use flop::processor::{process_path, process_path_delete};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();

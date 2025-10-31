@@ -2,8 +2,8 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "dbgc")]
-#[command(about = "dbgc recursively toggles debug printf statements in C/C++ code", long_about = None)]
+#[command(name = "flop")]
+#[command(about = "flop recursively toggles debug printf statements in C/C++ code", long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,

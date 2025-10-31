@@ -139,18 +139,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dbgc"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "console",
- "dialoguer",
- "regex",
- "walkdir",
-]
-
-[[package]]
 name = "dialoguer"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -184,6 +172,18 @@ name = "fastrand"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
+
+[[package]]
+name = "flop"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "console",
+ "dialoguer",
+ "regex",
+ "walkdir",
+]
 
 [[package]]
 name = "getrandom"

@@ -1,8 +1,8 @@
-# dbgc
+# flop
 
-`dbgc` (debug comment controller) is a command-line tool for toggling debug printf statements in C/C++ code. It recursively searches through your codebase to find debug logging statements and allows you to enable (`off`) or disable (`on`) them with a single command.
+`flop` (flip output) is a command-line tool for toggling debug printf statements in C/C++ code. It recursively searches through your codebase to find debug logging statements and allows you to enable (`off`) or disable (`on`) them with a single command.
 
-[![Build status](https://github.com/Justhiro55/dbgc/workflows/ci/badge.svg)](https://github.com/Justhiro55/dbgc/actions)
+[![Build status](https://github.com/Justhiro55/flop/workflows/ci/badge.svg)](https://github.com/Justhiro55/flop/actions)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
 ### Features
@@ -20,30 +20,30 @@
 
 ```bash
 # Enable debug output (uncomment) in the current directory
-$ dbgc off
+$ flop off
 
 # Disable debug output (comment out) in a specific directory
-$ dbgc on src/
+$ flop on src/
 
 # Preview what would be changed without modifying files
-$ dbgc off --dry-run src/
+$ flop off --dry-run src/
 
 # Interactively select which statements to enable
-$ dbgc off --interactive src/
+$ flop off --interactive src/
 
 # Enable ALL output functions (not just debug)
-$ dbgc off --all src/
+$ flop off --all src/
 
 # Delete all debug statements permanently
-$ dbgc delete src/
+$ flop delete src/
 
 # Process a single file
-$ dbgc off main.c
+$ flop off main.c
 ```
 
 ### Screenshot
 
-When you run `dbgc`, it displays all matching debug statements grouped by file:
+When you run `flop`, it displays all matching debug statements grouped by file:
 <img width="510" height="398" alt="CleanShot 2025-10-22 at 11 40 07@2x" src="https://github.com/user-attachments/assets/c37704fd-cef6-4cd9-a454-977f59969690" />
 
 File names are displayed in **magenta**, line numbers in **green**, and debug keywords in **bold red**.
@@ -55,25 +55,25 @@ File names are displayed in **magenta**, line numbers in **green**, and debug ke
 You'll need [Rust](https://www.rust-lang.org/) installed (1.70.0 or newer).
 
 ```bash
-git clone https://github.com/yourusername/dbgc.git
-cd dbgc
+git clone https://github.com/yourusername/flop.git
+cd flop
 cargo build --release
 ```
 
-The binary will be available at `./target/release/dbgc`.
+The binary will be available at `./target/release/flop`.
 
 #### Install to system
 
 ```bash
 cargo install --path .
 # Or copy the binary manually
-sudo cp target/release/dbgc /usr/local/bin/
+sudo cp target/release/flop /usr/local/bin/
 ```
 
 ### Usage
 
 ```
-dbgc <COMMAND> [OPTIONS] [PATH]
+flop <COMMAND> [OPTIONS] [PATH]
 
 Commands:
   off      Uncomment debug printf statements (enable debug output)
@@ -93,7 +93,7 @@ Options:
 
 ### How it works
 
-`dbgc` searches for C/C++ output functions where the string or stream contains the keyword "debug" or "DEBUG" (case-sensitive). This includes:
+`flop` searches for C/C++ output functions where the string or stream contains the keyword "debug" or "DEBUG" (case-sensitive). This includes:
 - C standard I/O functions (printf family, puts family, write, perror)
 - C++ stream operators (std::cout, std::cerr, std::clog)
 
@@ -124,31 +124,31 @@ C++ streams:
 #### Enable debug logs in current directory
 
 ```bash
-dbgc off
+flop off
 ```
 
 #### Enable debug logs in a specific directory
 
 ```bash
-dbgc off src/
+flop off src/
 ```
 
 #### Disable debug logs for production
 
 ```bash
-dbgc on src/
+flop on src/
 ```
 
 #### Process a single file
 
 ```bash
-dbgc off main.c
+flop off main.c
 ```
 
 #### Delete debug logs permanently
 
 ```bash
-dbgc delete src/
+flop delete src/
 ```
 
 **Warning**: This permanently removes debug statement lines from your files. Use with caution!
@@ -159,10 +159,10 @@ Use `-y` or `--yes` flag to skip the confirmation prompt, useful for scripts and
 
 ```bash
 # Enable debug output without confirmation
-dbgc off --yes
+flop off --yes
 
 # Delete without confirmation (use with caution!)
-dbgc delete -y src/
+flop delete -y src/
 ```
 
 #### Cancel operation
@@ -180,7 +180,7 @@ Preview what would be changed without actually modifying any files:
 
 ```bash
 # See what would be enabled without making changes
-dbgc off --dry-run src/
+flop off --dry-run src/
 
 # Example output:
 Found 12 debug statement(s):
@@ -196,19 +196,19 @@ Dry run mode automatically skips confirmation prompts and never modifies files. 
 You can combine with other flags:
 ```bash
 # Dry run with all output functions
-dbgc off --dry-run --all src/
+flop off --dry-run --all src/
 
 # Dry run with interactive selection
-dbgc off --dry-run --interactive src/
+flop off --dry-run --interactive src/
 ```
 
 #### Detect all output functions with --all flag
 
-By default, `dbgc` only detects output functions containing "debug" or "DEBUG" keywords. Use the `--all` flag to detect all output functions regardless of content:
+By default, `flop` only detects output functions containing "debug" or "DEBUG" keywords. Use the `--all` flag to detect all output functions regardless of content:
 
 ```bash
 # Enable ALL printf/cout statements, not just debug ones
-dbgc off --all src/
+flop off --all src/
 
 # This will detect:
 # - printf("debug: message") ← debug statement
@@ -224,7 +224,7 @@ Use interactive mode to selectively choose which statements to process:
 
 ```bash
 # Interactively select which debug statements to enable
-dbgc off --interactive src/
+flop off --interactive src/
 
 # You'll see a list of all matches with:
 # - Arrow keys to navigate
@@ -237,7 +237,7 @@ Interactive mode works with all commands (`off`, `on`, `delete`) and can be comb
 
 ```bash
 # Interactively select from ALL output functions to enable
-dbgc off --interactive --all src/
+flop off --interactive --all src/
 ```
 
 ### Building
@@ -254,18 +254,18 @@ The repository includes sample C files in the `tests/` and `sample/` directories
 # Build the project
 cargo build --release
 
-# Navigate to the tests directory and run dbgc without path argument
+# Navigate to the tests directory and run flop without path argument
 cd tests/
-../target/release/dbgc on
+../target/release/flop on
 
 # Disable all debug statements (type 'y' to confirm)
-../target/release/dbgc on
+../target/release/flop on
 
 # Verify they are commented out
 cat main.c
 
 # Enable all debug statements (type 'y' to confirm)
-../target/release/dbgc off
+../target/release/flop off
 
 # Verify they are uncommented
 cat main.c
@@ -277,21 +277,21 @@ cd ..
 You can also test with the `sample/` directory which contains more comprehensive examples:
 
 ```bash
-./target/release/dbgc on sample/
+./target/release/flop on sample/
 ```
 
-### Why use dbgc?
+### Why use flop?
 
 * **Speed up your workflow** - No need to manually toggle debug statements
 * **Avoid mistakes** - Dry run mode and interactive selection prevents accidental changes
-* **Clean commits** - Easily disable debug logs before committing (`dbgc on`)
-* **Quick debugging** - Enable all debug logs when investigating issues (`dbgc off`)
+* **Clean commits** - Easily disable debug logs before committing (`flop on`)
+* **Quick debugging** - Enable all debug logs when investigating issues (`flop off`)
 * **Production cleanup** - Permanently delete debug statements with the delete command
 * **Safe exploration** - Use `--dry-run` to preview changes before applying them
 * **Selective control** - Use interactive mode to choose exactly which statements to process
 * **Comprehensive detection** - Use `--all` flag to find all output functions
 
-### Why not use dbgc?
+### Why not use flop?
 
 * **Language specific** - Only works with C/C++ code
 * **Simple pattern matching** - May not catch all debug logging patterns
