@@ -147,6 +147,9 @@ impl App {
     fn handle_key(&mut self, key: KeyEvent) -> KeyAction {
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => KeyAction::Quit,
+            KeyCode::Char('c') if key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL) => {
+                KeyAction::Quit
+            }
             KeyCode::Enter => KeyAction::Confirm,
             KeyCode::Down | KeyCode::Char('j') => {
                 self.next();
@@ -306,7 +309,7 @@ impl App {
             Span::raw(" all | "),
             Span::styled("Enter", Style::default().fg(Color::Green)),
             Span::raw(" confirm | "),
-            Span::styled("Esc/q", Style::default().fg(Color::Red)),
+            Span::styled("Esc/q/Ctrl-C", Style::default().fg(Color::Red)),
             Span::raw(" cancel"),
         ]);
 
