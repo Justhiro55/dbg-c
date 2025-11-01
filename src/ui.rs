@@ -77,11 +77,23 @@ struct App {
     scroll_state: ScrollbarState,
     selected: Vec<bool>, // Track which items are selected
     row_to_match: Vec<Option<usize>>, // Maps table row index to match index (None for separators)
+    file_list: Vec<PathBuf>, // List of unique files
+    current_file_index: usize, // Index of currently displayed file
 }
 
 impl App {
     fn new(matches: Vec<Match>) -> Self {
         let selected = vec![false; matches.len()];
+
+        // Build unique file list
+        let mut file_list = Vec::new();
+        let mut seen_files = std::collections::HashSet::new();
+        for m in &matches {
+            if seen_files.insert(m.file_path.clone()) {
+                file_list.push(m.file_path.clone());
+            }
+        }
+
         let scroll_state = ScrollbarState::new(matches.len());
         let mut table_state = TableState::default();
         if !matches.is_empty() {
@@ -94,6 +106,8 @@ impl App {
             scroll_state,
             selected,
             row_to_match: Vec::new(), // Will be populated in ui()
+            file_list,
+            current_file_index: 0,
         }
     }
 
@@ -159,6 +173,14 @@ impl App {
             }
             KeyCode::Up | KeyCode::Char('k') => {
                 self.previous();
+                KeyAction::Continue
+            }
+            KeyCode::Left | KeyCode::Char('h') => {
+                self.previous_file();
+                KeyAction::Continue
+            }
+            KeyCode::Right | KeyCode::Char('l') => {
+                self.next_file();
                 KeyAction::Continue
             }
             KeyCode::Tab | KeyCode::Char(' ') => {
@@ -237,6 +259,30 @@ impl App {
         }
     }
 
+    fn next_file(&mut self) {
+        if self.file_list.is_empty() {
+            return;
+        }
+        self.current_file_index = (self.current_file_index + 1) % self.file_list.len();
+        // Reset cursor to first row of new file
+        self.table_state.select(Some(0));
+        self.scroll_state = self.scroll_state.position(0);
+    }
+
+    fn previous_file(&mut self) {
+        if self.file_list.is_empty() {
+            return;
+        }
+        if self.current_file_index == 0 {
+            self.current_file_index = self.file_list.len() - 1;
+        } else {
+            self.current_file_index -= 1;
+        }
+        // Reset cursor to first row of new file
+        self.table_state.select(Some(0));
+        self.scroll_state = self.scroll_state.position(0);
+    }
+
     fn ui(&mut self, f: &mut Frame) {
         let area = f.area();
 
@@ -247,6 +293,27 @@ impl App {
         ])
         .split(area);
 
+        // Get current file to filter by
+        let current_file = if !self.file_list.is_empty() {
+            Some(&self.file_list[self.current_file_index])
+        } else {
+            None
+        };
+
+        // Filter matches to only show current file
+        let filtered_matches: Vec<(usize, &Match)> = self
+            .matches
+            .iter()
+            .enumerate()
+            .filter(|(_, m)| {
+                if let Some(cf) = current_file {
+                    &m.file_path == cf
+                } else {
+                    true
+                }
+            })
+            .collect();
+
         // Calculate column widths
         let max_file_width = self
             .matches
@@ -256,49 +323,25 @@ impl App {
             .unwrap_or(20)
             .min(40);
 
-        // Calculate separator width (table width minus borders and right margin)
-        let table_width = chunks[0].width.saturating_sub(2) as usize; // Subtract left/right borders
-        let separator_width = table_width.saturating_sub(3); // Right margin of 3
-
-        // Create table rows with file separators
+        // Create table rows (no file separators needed when showing single file)
         let mut rows: Vec<Row> = Vec::new();
         let mut row_to_match: Vec<Option<usize>> = Vec::new();
-        let mut prev_file: Option<PathBuf> = None;
 
-        for (i, m) in self.matches.iter().enumerate() {
-            // Add separator line when file changes
-            if let Some(ref prev) = prev_file {
-                if prev != &m.file_path {
-                    // Add a separator row spanning all columns
-                    // Each column gets its portion of the line
-                    let checkbox_sep = "────"; // 4 chars to match checkbox + space
-                    let file_sep = "─".repeat(max_file_width + 2);
-                    let line_sep = "──────";
+        for (idx, (original_idx, m)) in filtered_matches.iter().enumerate() {
+            let checkbox = if self.selected[*original_idx] { "[✓] " } else { "[ ] " };
 
-                    // Calculate code separator length to fill remaining width
-                    let used_width = checkbox_sep.len() + file_sep.len() + line_sep.len();
-                    let code_sep_len = if separator_width > used_width {
-                        separator_width - used_width
-                    } else {
-                        50 // Minimum fallback
-                    };
-                    let code_sep = "─".repeat(code_sep_len);
-
-                    rows.push(
-                        Row::new(vec![checkbox_sep.to_string(), file_sep, line_sep.to_string(), code_sep])
-                            .style(Style::default().fg(Color::DarkGray)),
-                    );
-                    row_to_match.push(None); // Separator row, not selectable
+            // Show file path only on first row
+            let file_display = if idx == 0 {
+                // Full path for first row
+                let file_str = m.file_path.display().to_string();
+                if file_str.len() > max_file_width {
+                    format!("...{}", &file_str[file_str.len() - max_file_width + 3..])
+                } else {
+                    file_str
                 }
-            }
-            prev_file = Some(m.file_path.clone());
-
-            let checkbox = if self.selected[i] { "[✓] " } else { "[ ] " };
-            let file_str = m.file_path.display().to_string();
-            let file_display = if file_str.len() > max_file_width {
-                format!("...{}", &file_str[file_str.len() - max_file_width + 3..])
             } else {
-                file_str
+                // Empty for subsequent rows
+                String::new()
             };
 
             rows.push(Row::new(vec![
@@ -307,7 +350,7 @@ impl App {
                 m.line_number.to_string(),
                 m.line_content.trim().to_string(),
             ]));
-            row_to_match.push(Some(i)); // Map this row to match index i
+            row_to_match.push(Some(*original_idx)); // Map this row to original match index
         }
 
         // Store mapping for navigation
@@ -316,8 +359,22 @@ impl App {
         let selected_count = self.selected.iter().filter(|&&s| s).count();
         let total = self.matches.len();
         let current_pos = self.table_state.selected().unwrap_or(0) + 1;
+        let filtered_count = filtered_matches.len();
 
-        let title = format!(" {} / {} selected | {} / {} ", selected_count, total, current_pos, total);
+        let title = if let Some(cf) = current_file {
+            format!(
+                " {} / {} selected | {} / {} | File {}/{}: {} ",
+                selected_count,
+                total,
+                current_pos,
+                filtered_count,
+                self.current_file_index + 1,
+                self.file_list.len(),
+                cf.display()
+            )
+        } else {
+            format!(" {} / {} selected | {} / {} ", selected_count, total, current_pos, total)
+        };
 
         let table = Table::new(
             rows,
@@ -361,6 +418,10 @@ impl App {
             Span::raw(" up | "),
             Span::styled("↓/j", Style::default().fg(Color::Cyan)),
             Span::raw(" down | "),
+            Span::styled("←/h", Style::default().fg(Color::Cyan)),
+            Span::raw(" prev file | "),
+            Span::styled("→/l", Style::default().fg(Color::Cyan)),
+            Span::raw(" next file | "),
             Span::styled("Space/Tab", Style::default().fg(Color::Cyan)),
             Span::raw(" toggle | "),
             Span::styled("a", Style::default().fg(Color::Cyan)),
