@@ -1,11 +1,14 @@
 # flop
 
-`flop` (flip output) is an interactive command-line tool for managing output statements in C/C++ code. It recursively searches through your codebase to find output statements and allows you to toggle them with an intuitive TUI interface.
-
 [![Build status](https://github.com/Justhiro55/flop/workflows/ci/badge.svg)](https://github.com/Justhiro55/flop/actions)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
-### Features
+**Flip output** is an interactive command-line tool that helps you manage output statements in C/C++ code.
+It works by recursively searching your codebase and lets you toggle statements with an intuitive interface.
+
+![flop interactive mode](docs/flop.png)
+
+## Features
 
 * **Interactive by default** - Beautiful TUI for selecting specific statements with file navigation
 * **Fast and recursive** - Processes entire directory trees including subdirectories
@@ -16,7 +19,7 @@
 * **Syntax highlighting** - Color-coded output similar to ripgrep for easy reading
 * **Multiple modes** - Comment out, uncomment, or permanently delete statements
 
-### Quick example
+## Quick example
 
 ```bash
 # Disable all output (interactive TUI by default)
@@ -41,17 +44,9 @@ $ flop delete src/
 $ flop on main.c
 ```
 
-### Screenshot
+## Installation
 
-Interactive TUI mode with file navigation:
-
-![flop interactive mode](docs/flop.png)
-
-Navigate between files with arrow keys, select statements with Space/Tab, and confirm with Enter.
-
-### Installation
-
-#### From source
+### From source
 
 You'll need [Rust](https://www.rust-lang.org/) installed (1.70.0 or newer).
 
@@ -63,7 +58,7 @@ cargo build --release
 
 The binary will be available at `./target/release/flop`.
 
-#### Install to system
+### Install to system
 
 ```bash
 cargo install --path .
@@ -71,7 +66,7 @@ cargo install --path .
 sudo cp target/release/flop /usr/local/bin/
 ```
 
-### Usage
+## Usage
 
 ```
 flop <COMMAND> [OPTIONS] [PATH]
@@ -91,7 +86,7 @@ Options:
   -h, --help     Print help
 ```
 
-### How it works
+## How it works
 
 By default, `flop` searches for **all** C/C++ output functions in your codebase. Use the `--debug` flag to filter only statements containing "debug" or "DEBUG" keywords.
 
@@ -121,9 +116,9 @@ C++ streams:
 - `std::cerr`
 - `std::clog`
 
-### Examples
+## Examples
 
-#### Interactive mode (default)
+### Interactive mode (default)
 
 By default, `flop` opens an interactive TUI where you can select which statements to process:
 
@@ -137,7 +132,7 @@ flop on
 # Press Enter to confirm, Esc/q to cancel
 ```
 
-#### Disable output in current directory
+### Disable output in current directory
 
 ```bash
 # Interactively disable all output
@@ -147,7 +142,7 @@ flop on
 flop on --debug
 ```
 
-#### Enable output in a specific directory
+### Enable output in a specific directory
 
 ```bash
 # Interactively enable all output
@@ -157,7 +152,7 @@ flop off src/
 flop off --debug src/
 ```
 
-#### Batch mode with --yes flag
+### Batch mode with --yes flag
 
 Use `-y` or `--yes` to skip interactive selection and process all matched statements (confirmation still required):
 
@@ -172,7 +167,7 @@ flop on -dy src/
 flop off -y
 ```
 
-#### Process a single file
+### Process a single file
 
 ```bash
 # Interactive mode
@@ -182,7 +177,7 @@ flop on main.c
 flop on -y main.c
 ```
 
-#### Delete statements permanently
+### Delete statements permanently
 
 ```bash
 # Interactive deletion
@@ -194,7 +189,7 @@ flop delete -y src/
 
 **Warning**: This permanently removes statement lines from your files. Use with caution!
 
-#### Preview mode with --preview flag
+### Preview mode with --preview flag
 
 Preview what would be changed without actually modifying any files:
 
@@ -214,7 +209,7 @@ Preview mode never modifies files. It's useful for:
 - Verifying detection patterns
 - Safely exploring the tool's behavior
 
-#### Filter debug output with --debug flag
+### Filter debug output with --debug flag
 
 By default, `flop` detects **all** output functions. Use `--debug` to filter only statements containing "debug" or "DEBUG" keywords:
 
@@ -228,7 +223,7 @@ flop on --debug
 # - std::cout << "DEBUG: xyz" ← detected
 ```
 
-#### Cancel operation
+### Cancel operation
 
 When prompted for confirmation, type `n` to cancel without making changes:
 
@@ -237,13 +232,13 @@ Do you want to disable (comment out) these statements? (y/n): n
 Operation cancelled.
 ```
 
-### Building
+## Building
 
 ```bash
 cargo build --release
 ```
 
-### Testing
+## Testing
 
 The repository includes sample C files in the `tests/` and `sample/` directories for testing:
 
@@ -277,7 +272,7 @@ You can also test with the `sample/` directory which contains more comprehensive
 ./target/release/flop on sample/
 ```
 
-### Why use flop?
+## Why use flop?
 
 * **Speed up your workflow** - No need to manually toggle output statements
 * **Interactive by default** - Beautiful TUI with file navigation makes selection intuitive
@@ -289,13 +284,13 @@ You can also test with the `sample/` directory which contains more comprehensive
 * **Flexible filtering** - Process all output or filter by debug keyword with `--debug`
 * **Batch automation** - Use `--yes` flag for scripts while keeping confirmation
 
-### Why not use flop?
+## Why not use flop?
 
 * **Language specific** - Only works with C/C++ code
 * **Simple pattern matching** - May not catch all debug logging patterns
 * **Printf-based only** - Doesn't work with logging libraries (log4c, spdlog, etc.)
 
-### License
+## License
 
 This project is dual-licensed under the MIT License and Apache License 2.0.
 
