@@ -314,39 +314,15 @@ impl App {
             })
             .collect();
 
-        // Calculate column widths
-        let max_file_width = self
-            .matches
-            .iter()
-            .map(|m| m.file_path.display().to_string().len())
-            .max()
-            .unwrap_or(20)
-            .min(40);
-
         // Create table rows (no file separators needed when showing single file)
         let mut rows: Vec<Row> = Vec::new();
         let mut row_to_match: Vec<Option<usize>> = Vec::new();
 
-        for (idx, (original_idx, m)) in filtered_matches.iter().enumerate() {
+        for (_idx, (original_idx, m)) in filtered_matches.iter().enumerate() {
             let checkbox = if self.selected[*original_idx] { "[✓] " } else { "[ ] " };
-
-            // Show file path only on first row
-            let file_display = if idx == 0 {
-                // Full path for first row
-                let file_str = m.file_path.display().to_string();
-                if file_str.len() > max_file_width {
-                    format!("...{}", &file_str[file_str.len() - max_file_width + 3..])
-                } else {
-                    file_str
-                }
-            } else {
-                // Empty for subsequent rows
-                String::new()
-            };
 
             rows.push(Row::new(vec![
                 checkbox.to_string(),
-                file_display,
                 m.line_number.to_string(),
                 m.line_content.trim().to_string(),
             ]));
@@ -380,13 +356,12 @@ impl App {
             rows,
             [
                 Constraint::Length(4),                  // Checkbox + space
-                Constraint::Length(max_file_width as u16 + 2), // File
                 Constraint::Length(6),                  // Line
                 Constraint::Min(20),                    // Code
             ],
         )
         .header(
-            Row::new(vec!["   ", "FILE", "LINE", "CODE"])
+            Row::new(vec!["   ", "LINE", "CODE"])
                 .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
                 .bottom_margin(0),
         )
