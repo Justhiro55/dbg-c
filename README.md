@@ -46,12 +46,20 @@ $ flop on main.c
 
 ## Installation
 
+### From crates.io
+
+If you're a Rust programmer, flop can be installed with `cargo`:
+
+```bash
+cargo install flop-cli
+```
+
 ### From source
 
 You'll need [Rust](https://www.rust-lang.org/) installed (1.70.0 or newer).
 
 ```bash
-git clone https://github.com/yourusername/flop.git
+git clone https://github.com/Justhiro55/flop.git
 cd flop
 cargo build --release
 ```
