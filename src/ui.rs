@@ -47,7 +47,12 @@ pub fn display_matches(matches: &[Match]) {
         for m in sorted_matches {
             // Line number in green, followed by colon and content with highlighted debug keyword
             let highlighted = highlight_debug_keyword(&m.line_content);
-            println!("\x1b[32m{}\x1b[0m:{}", m.line_number, highlighted.trim());
+            let line_display = if m.line_number == m.end_line_number {
+                format!("{}", m.line_number)
+            } else {
+                format!("{}-{}", m.line_number, m.end_line_number)
+            };
+            println!("\x1b[32m{}\x1b[0m:{}", line_display, highlighted.trim());
         }
 
         println!(); // Empty line between files
@@ -117,20 +122,34 @@ impl App {
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
 
-        // Calculate height based on the file with most matches
-        let max_matches_per_file = self
+        // Calculate height based on the file with most table rows (including multiline expansion)
+        let max_rows_per_file = self
             .file_list
             .iter()
-            .map(|file| self.matches.iter().filter(|m| &m.file_path == file).count())
+            .map(|file| {
+                self.matches
+                    .iter()
+                    .filter(|m| &m.file_path == file)
+                    .map(|m| m.multiline_content.len().max(1)) // Count actual lines
+                    .sum::<usize>()
+            })
             .max()
             .unwrap_or(self.matches.len());
 
+        // Get terminal size to calculate reasonable height
+        let terminal_size = crossterm::terminal::size().unwrap_or((80, 24));
+        let terminal_height = terminal_size.1;
+
         // Use inline mode to preserve terminal history
-        let height = (max_matches_per_file as u16 + 6).min(30); // +6 for borders and headers
+        // +6 for borders, headers, and help text
+        // Use up to 80% of terminal height or max needed rows, whichever is smaller
+        let max_height = (terminal_height as f32 * 0.8) as u16;
+        let needed_height = (max_rows_per_file as u16 + 6).min(max_height).max(10);
+
         let mut terminal = Terminal::with_options(
             backend,
             ratatui::TerminalOptions {
-                viewport: ratatui::Viewport::Inline(height),
+                viewport: ratatui::Viewport::Inline(needed_height),
             },
         )?;
 
@@ -344,12 +363,40 @@ impl App {
                 "[ ] "
             };
 
-            rows.push(Row::new(vec![
-                checkbox.to_string(),
-                m.line_number.to_string(),
-                m.line_content.trim().to_string(),
-            ]));
-            row_to_match.push(Some(*original_idx)); // Map this row to original match index
+            let line_display = if m.line_number == m.end_line_number {
+                format!("{}", m.line_number)
+            } else {
+                format!("{}-{}", m.line_number, m.end_line_number)
+            };
+
+            // Display multiline content if available
+            if m.multiline_content.len() > 1 {
+                // First line - selectable
+                rows.push(Row::new(vec![
+                    checkbox.to_string(),
+                    line_display.clone(),
+                    m.multiline_content[0].trim().to_string(),
+                ]));
+                row_to_match.push(Some(*original_idx));
+
+                // Continuation lines - not selectable
+                for line in &m.multiline_content[1..] {
+                    rows.push(Row::new(vec![
+                        "    ".to_string(), // No checkbox
+                        "...".to_string(),  // Continuation marker
+                        line.trim().to_string(),
+                    ]));
+                    row_to_match.push(None); // Not selectable
+                }
+            } else {
+                // Single line
+                rows.push(Row::new(vec![
+                    checkbox.to_string(),
+                    line_display,
+                    m.line_content.trim().to_string(),
+                ]));
+                row_to_match.push(Some(*original_idx));
+            }
         }
 
         // Store mapping for navigation
@@ -359,6 +406,35 @@ impl App {
         let total = self.matches.len();
         let current_pos = self.table_state.selected().unwrap_or(0) + 1;
         let filtered_count = filtered_matches.len();
+        let total_rows = rows.len(); // Store before moving rows
+
+        // Adjust scroll offset to ensure selected row and its continuation lines are visible
+        let selected_row = self.table_state.selected().unwrap_or(0);
+        let table_height = chunks[0].height.saturating_sub(3) as usize; // Subtract borders and header
+
+        // Find how many continuation lines follow the selected row
+        let mut continuation_lines = 0;
+        for i in (selected_row + 1)..total_rows {
+            if self.row_to_match.get(i).and_then(|&x| x).is_none() {
+                continuation_lines += 1;
+            } else {
+                break;
+            }
+        }
+
+        // Calculate offset to keep selected row and its continuations visible
+        let current_offset = self.table_state.offset();
+        let last_visible_row = current_offset + table_height.saturating_sub(1);
+        let needed_last_row = selected_row + continuation_lines;
+
+        if needed_last_row > last_visible_row {
+            // Need to scroll down to show continuation lines
+            let new_offset = needed_last_row.saturating_sub(table_height.saturating_sub(1));
+            *self.table_state.offset_mut() = new_offset;
+        } else if selected_row < current_offset {
+            // Need to scroll up to show selected row
+            *self.table_state.offset_mut() = selected_row;
+        }
 
         let title = if let Some(cf) = current_file {
             format!(
@@ -382,7 +458,7 @@ impl App {
             rows,
             [
                 Constraint::Length(4), // Checkbox + space
-                Constraint::Length(6), // Line
+                Constraint::Length(8), // Line (increased to accommodate ranges like "10-15")
                 Constraint::Min(20),   // Code
             ],
         )
@@ -411,7 +487,9 @@ impl App {
             .begin_symbol(Some("↑"))
             .end_symbol(Some("↓"));
 
-        let mut scrollbar_state = self.scroll_state;
+        // Update scrollbar to reflect actual number of rows (including multiline expansion)
+        let mut scrollbar_state = ScrollbarState::new(total_rows)
+            .position(self.table_state.selected().unwrap_or(0));
         f.render_stateful_widget(
             scrollbar,
             chunks[0].inner(ratatui::layout::Margin {

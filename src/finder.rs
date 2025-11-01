@@ -87,11 +87,15 @@ pub fn find_debug_printfs(
             let is_commented = comment_pattern.is_match(&line_content);
 
             if is_commented == find_commented {
+                // Extract original lines for multiline display
+                let multiline_content: Vec<String> = match_str.lines().map(|s| s.to_string()).collect();
+
                 matches.push(Match {
                     file_path: file_path.clone(),
                     line_number,
                     end_line_number,
                     line_content: match_str.replace('\n', " ").trim().to_string(),
+                    multiline_content,
                 });
             }
         }
@@ -123,11 +127,15 @@ pub fn find_debug_printfs(
             let is_commented = comment_pattern.is_match(&line_content);
 
             if is_commented == find_commented {
+                // Extract original lines for multiline display
+                let multiline_content: Vec<String> = match_str.lines().map(|s| s.to_string()).collect();
+
                 matches.push(Match {
                     file_path: file_path.clone(),
                     line_number,
                     end_line_number,
                     line_content: match_str.replace('\n', " ").trim().to_string(),
+                    multiline_content,
                 });
             }
         }
