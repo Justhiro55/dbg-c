@@ -55,6 +55,54 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
+      - name: Test comment/uncomment functionality
+        if: matrix.build == 'stable'
+        run: |
+          # Build release binary
+          cargo build --release
+
+          # Test C multiline comment/uncomment
+          echo "Testing C file..."
+          cp sample/c/test_multiline.c /tmp/test_c.c
+
+          # Test commenting
+          echo "y" | ./target/release/flop on /tmp/test_c.c -y
+          if ! diff -q /tmp/test_c.c sample/c/test_multiline_commented.c; then
+            echo "Failed: Commented C file doesn't match expected output"
+            diff /tmp/test_c.c sample/c/test_multiline_commented.c
+            exit 1
+          fi
+
+          # Test uncommenting
+          echo "y" | ./target/release/flop off /tmp/test_c.c -y
+          if ! diff -q /tmp/test_c.c sample/c/test_multiline.c; then
+            echo "Failed: Uncommented C file doesn't match original"
+            diff /tmp/test_c.c sample/c/test_multiline.c
+            exit 1
+          fi
+
+          # Test C++ multiline comment/uncomment
+          echo "Testing C++ file..."
+          cp sample/cpp/test_multiline.cpp /tmp/test_cpp.cpp
+
+          # Test commenting
+          echo "y" | ./target/release/flop on /tmp/test_cpp.cpp -y
+          if ! diff -q /tmp/test_cpp.cpp sample/cpp/test_multiline_commented.cpp; then
+            echo "Failed: Commented C++ file doesn't match expected output"
+            diff /tmp/test_cpp.cpp sample/cpp/test_multiline_commented.cpp
+            exit 1
+          fi
+
+          # Test uncommenting
+          echo "y" | ./target/release/flop off /tmp/test_cpp.cpp -y
+          if ! diff -q /tmp/test_cpp.cpp sample/cpp/test_multiline.cpp; then
+            echo "Failed: Uncommented C++ file doesn't match original"
+            diff /tmp/test_cpp.cpp sample/cpp/test_multiline.cpp
+            exit 1
+          fi
+
+          echo "All tests passed!"
+
   rustfmt:
     name: rustfmt
     runs-on: ubuntu-latest
