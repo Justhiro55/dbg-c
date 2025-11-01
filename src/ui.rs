@@ -75,10 +75,10 @@ struct App {
     matches: Vec<Match>,
     table_state: TableState,
     scroll_state: ScrollbarState,
-    selected: Vec<bool>, // Track which items are selected
+    selected: Vec<bool>,              // Track which items are selected
     row_to_match: Vec<Option<usize>>, // Maps table row index to match index (None for separators)
-    file_list: Vec<PathBuf>, // List of unique files
-    current_file_index: usize, // Index of currently displayed file
+    file_list: Vec<PathBuf>,          // List of unique files
+    current_file_index: usize,        // Index of currently displayed file
 }
 
 impl App {
@@ -118,10 +118,10 @@ impl App {
         let backend = CrosstermBackend::new(stdout);
 
         // Calculate height based on the file with most matches
-        let max_matches_per_file = self.file_list.iter()
-            .map(|file| {
-                self.matches.iter().filter(|m| &m.file_path == file).count()
-            })
+        let max_matches_per_file = self
+            .file_list
+            .iter()
+            .map(|file| self.matches.iter().filter(|m| &m.file_path == file).count())
             .max()
             .unwrap_or(self.matches.len());
 
@@ -143,7 +143,10 @@ impl App {
         result
     }
 
-    fn run_app(&mut self, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<Vec<Match>> {
+    fn run_app(
+        &mut self,
+        terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    ) -> Result<Vec<Match>> {
         loop {
             terminal.draw(|f| self.ui(f))?;
 
@@ -171,7 +174,11 @@ impl App {
     fn handle_key(&mut self, key: KeyEvent) -> KeyAction {
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => KeyAction::Quit,
-            KeyCode::Char('c') if key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL) => {
+            KeyCode::Char('c')
+                if key
+                    .modifiers
+                    .contains(crossterm::event::KeyModifiers::CONTROL) =>
+            {
                 KeyAction::Quit
             }
             KeyCode::Enter => KeyAction::Confirm,
@@ -231,7 +238,11 @@ impl App {
         let max_rows = self.row_to_match.len();
 
         // Find previous selectable row (not a separator)
-        let mut prev_row = if current == 0 { max_rows - 1 } else { current - 1 };
+        let mut prev_row = if current == 0 {
+            max_rows - 1
+        } else {
+            current - 1
+        };
         loop {
             if self.row_to_match.get(prev_row).and_then(|&x| x).is_some() {
                 break;
@@ -296,8 +307,8 @@ impl App {
 
         // Create layout
         let chunks = Layout::vertical([
-            Constraint::Min(3),        // Table
-            Constraint::Length(1),     // Help text
+            Constraint::Min(3),    // Table
+            Constraint::Length(1), // Help text
         ])
         .split(area);
 
@@ -326,8 +337,12 @@ impl App {
         let mut rows: Vec<Row> = Vec::new();
         let mut row_to_match: Vec<Option<usize>> = Vec::new();
 
-        for (_idx, (original_idx, m)) in filtered_matches.iter().enumerate() {
-            let checkbox = if self.selected[*original_idx] { "[✓] " } else { "[ ] " };
+        for (original_idx, m) in filtered_matches.iter() {
+            let checkbox = if self.selected[*original_idx] {
+                "[✓] "
+            } else {
+                "[ ] "
+            };
 
             rows.push(Row::new(vec![
                 checkbox.to_string(),
@@ -357,24 +372,35 @@ impl App {
                 cf.display()
             )
         } else {
-            format!(" {} / {} selected | {} / {} ", selected_count, total, current_pos, total)
+            format!(
+                " {} / {} selected | {} / {} ",
+                selected_count, total, current_pos, total
+            )
         };
 
         let table = Table::new(
             rows,
             [
-                Constraint::Length(4),                  // Checkbox + space
-                Constraint::Length(6),                  // Line
-                Constraint::Min(20),                    // Code
+                Constraint::Length(4), // Checkbox + space
+                Constraint::Length(6), // Line
+                Constraint::Min(20),   // Code
             ],
         )
         .header(
             Row::new(vec!["   ", "LINE", "CODE"])
-                .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+                .style(
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                )
                 .bottom_margin(0),
         )
         .block(Block::default().borders(Borders::ALL).title(title))
-        .row_highlight_style(Style::default().bg(Color::DarkGray).add_modifier(Modifier::BOLD))
+        .row_highlight_style(
+            Style::default()
+                .bg(Color::DarkGray)
+                .add_modifier(Modifier::BOLD),
+        )
         .highlight_spacing(HighlightSpacing::Always)
         .column_spacing(0); // Remove spacing between columns
 
@@ -385,7 +411,7 @@ impl App {
             .begin_symbol(Some("↑"))
             .end_symbol(Some("↓"));
 
-        let mut scrollbar_state = self.scroll_state.clone();
+        let mut scrollbar_state = self.scroll_state;
         f.render_stateful_widget(
             scrollbar,
             chunks[0].inner(ratatui::layout::Margin {
@@ -416,8 +442,7 @@ impl App {
         ]);
 
         f.render_widget(
-            ratatui::widgets::Paragraph::new(help)
-                .alignment(ratatui::layout::Alignment::Right),
+            ratatui::widgets::Paragraph::new(help).alignment(ratatui::layout::Alignment::Right),
             chunks[1],
         );
     }
