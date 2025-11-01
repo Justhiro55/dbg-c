@@ -117,8 +117,16 @@ impl App {
         let stdout = io::stdout();
         let backend = CrosstermBackend::new(stdout);
 
+        // Calculate height based on the file with most matches
+        let max_matches_per_file = self.file_list.iter()
+            .map(|file| {
+                self.matches.iter().filter(|m| &m.file_path == file).count()
+            })
+            .max()
+            .unwrap_or(self.matches.len());
+
         // Use inline mode to preserve terminal history
-        let height = (self.matches.len() as u16 + 6).min(30); // +6 for borders and headers
+        let height = (max_matches_per_file as u16 + 6).min(30); // +6 for borders and headers
         let mut terminal = Terminal::with_options(
             backend,
             ratatui::TerminalOptions {
