@@ -88,7 +88,8 @@ pub fn find_debug_printfs(
 
             if is_commented == find_commented {
                 // Extract original lines for multiline display
-                let multiline_content: Vec<String> = match_str.lines().map(|s| s.to_string()).collect();
+                let multiline_content: Vec<String> =
+                    match_str.lines().map(|s| s.to_string()).collect();
 
                 matches.push(Match {
                     file_path: file_path.clone(),
@@ -128,7 +129,8 @@ pub fn find_debug_printfs(
 
             if is_commented == find_commented {
                 // Extract original lines for multiline display
-                let multiline_content: Vec<String> = match_str.lines().map(|s| s.to_string()).collect();
+                let multiline_content: Vec<String> =
+                    match_str.lines().map(|s| s.to_string()).collect();
 
                 matches.push(Match {
                     file_path: file_path.clone(),

@@ -488,8 +488,8 @@ impl App {
             .end_symbol(Some("↓"));
 
         // Update scrollbar to reflect actual number of rows (including multiline expansion)
-        let mut scrollbar_state = ScrollbarState::new(total_rows)
-            .position(self.table_state.selected().unwrap_or(0));
+        let mut scrollbar_state =
+            ScrollbarState::new(total_rows).position(self.table_state.selected().unwrap_or(0));
         f.render_stateful_widget(
             scrollbar,
             chunks[0].inner(ratatui::layout::Margin {
