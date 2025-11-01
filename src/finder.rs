@@ -73,8 +73,15 @@ pub fn find_debug_printfs(
             let end_line_number = content[..end_offset].matches('\n').count() + 1;
 
             // Get the line content (for display purposes, we'll get the first line of the match)
-            let line_start_offset = content[..start_offset].rfind('\n').map(|pos| pos + 1).unwrap_or(0);
-            let line_content = content[line_start_offset..].lines().next().unwrap_or("").to_string();
+            let line_start_offset = content[..start_offset]
+                .rfind('\n')
+                .map(|pos| pos + 1)
+                .unwrap_or(0);
+            let line_content = content[line_start_offset..]
+                .lines()
+                .next()
+                .unwrap_or("")
+                .to_string();
 
             // Check if commented (check the beginning of the statement)
             let is_commented = comment_pattern.is_match(&line_content);
@@ -102,8 +109,15 @@ pub fn find_debug_printfs(
             let end_line_number = content[..end_offset].matches('\n').count() + 1;
 
             // Get the line content
-            let line_start_offset = content[..start_offset].rfind('\n').map(|pos| pos + 1).unwrap_or(0);
-            let line_content = content[line_start_offset..].lines().next().unwrap_or("").to_string();
+            let line_start_offset = content[..start_offset]
+                .rfind('\n')
+                .map(|pos| pos + 1)
+                .unwrap_or(0);
+            let line_content = content[line_start_offset..]
+                .lines()
+                .next()
+                .unwrap_or("")
+                .to_string();
 
             // Check if commented
             let is_commented = comment_pattern.is_match(&line_content);
