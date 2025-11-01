@@ -1,6 +1,6 @@
 [package]
 name = "flop-cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Justhiro55"]
 description = "Interactively flip debug output statements in C/C++ code"
