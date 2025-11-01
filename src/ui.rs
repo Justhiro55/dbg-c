@@ -289,7 +289,7 @@ impl App {
         // Create layout
         let chunks = Layout::vertical([
             Constraint::Min(3),        // Table
-            Constraint::Length(3),     // Help text
+            Constraint::Length(1),     // Help text
         ])
         .split(area);
 
@@ -408,18 +408,9 @@ impl App {
         ]);
 
         f.render_widget(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(" Controls "),
+            ratatui::widgets::Paragraph::new(help)
+                .alignment(ratatui::layout::Alignment::Right),
             chunks[1],
-        );
-
-        f.render_widget(
-            ratatui::widgets::Paragraph::new(help).block(Block::default()),
-            chunks[1].inner(ratatui::layout::Margin {
-                vertical: 1,
-                horizontal: 1,
-            }),
         );
     }
 }
