@@ -3,22 +3,22 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "flop")]
-#[command(about = "flop recursively toggles debug printf statements in C/C++ code")]
+#[command(about = "Interactively flip debug output statements")]
 #[command(long_about = "\
-flop recursively toggles debug printf statements in C/C++ code
+Interactively flip debug output statements
 
 EXAMPLES:
-    flop off                      Enable debug output in current directory
-    flop on src/                  Disable debug output in src/
-    flop off --dry-run src/       Preview changes without modifying files
-    flop off --interactive src/   Interactively select statements
-    flop delete --yes src/        Delete debug statements without confirmation
+    flop on                       Disable all output (interactive)
+    flop on -d                    Disable debug output only (interactive)
+    flop on -y                    Disable all output (batch, with confirmation)
+    flop on -dy                   Disable debug output only (batch)
+    flop off -p                   Preview what would be enabled
+    flop delete -d src/           Delete debug statements in src/ (interactive)
 
 COMMON OPTIONS:
-    -y, --yes          Skip confirmation prompt
-    -a, --all          Detect all output functions, not just debug statements
-    -i, --interactive  Interactive mode for selecting specific statements
-    -d, --dry-run      Dry run mode - show what would be changed without modifying files
+    -d, --debug    Only process output statements containing 'debug' keyword
+    -y, --yes      Skip interactive selection (batch mode, confirmation still required)
+    -p, --preview  Preview mode - show what would be changed without modifying files
 ")]
 pub struct Cli {
     #[command(subcommand)]
@@ -27,55 +27,46 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Uncomment debug printf statements (enable debug output)
+    /// Uncomment output statements (enable output)
     Off {
         /// Path to file or directory (defaults to current directory)
         path: Option<PathBuf>,
-        /// Skip confirmation prompt
+        /// Only process output statements containing 'debug' keyword
+        #[arg(short, long)]
+        debug: bool,
+        /// Skip interactive selection (batch mode, confirmation still required)
         #[arg(short, long)]
         yes: bool,
-        /// Detect all output functions, not just debug statements
+        /// Preview mode - show what would be changed without modifying files
         #[arg(short, long)]
-        all: bool,
-        /// Interactive mode for selecting specific statements
-        #[arg(short, long)]
-        interactive: bool,
-        /// Dry run mode - show what would be changed without modifying files
-        #[arg(short = 'd', long)]
-        dry_run: bool,
+        preview: bool,
     },
-    /// Comment out debug printf statements (disable debug output)
+    /// Comment out output statements (disable output)
     On {
         /// Path to file or directory (defaults to current directory)
         path: Option<PathBuf>,
-        /// Skip confirmation prompt
+        /// Only process output statements containing 'debug' keyword
+        #[arg(short, long)]
+        debug: bool,
+        /// Skip interactive selection (batch mode, confirmation still required)
         #[arg(short, long)]
         yes: bool,
-        /// Detect all output functions, not just debug statements
+        /// Preview mode - show what would be changed without modifying files
         #[arg(short, long)]
-        all: bool,
-        /// Interactive mode for selecting specific statements
-        #[arg(short, long)]
-        interactive: bool,
-        /// Dry run mode - show what would be changed without modifying files
-        #[arg(short = 'd', long)]
-        dry_run: bool,
+        preview: bool,
     },
-    /// Delete debug printf statements
+    /// Delete output statements
     Delete {
         /// Path to file or directory (defaults to current directory)
         path: Option<PathBuf>,
-        /// Skip confirmation prompt
+        /// Only process output statements containing 'debug' keyword
+        #[arg(short, long)]
+        debug: bool,
+        /// Skip interactive selection (batch mode, confirmation still required)
         #[arg(short, long)]
         yes: bool,
-        /// Detect all output functions, not just debug statements
+        /// Preview mode - show what would be changed without modifying files
         #[arg(short, long)]
-        all: bool,
-        /// Interactive mode for selecting specific statements
-        #[arg(short, long)]
-        interactive: bool,
-        /// Dry run mode - show what would be changed without modifying files
-        #[arg(short = 'd', long)]
-        dry_run: bool,
+        preview: bool,
     },
 }

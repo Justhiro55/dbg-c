@@ -1,44 +1,44 @@
 # flop
 
-`flop` (flip output) is a command-line tool for toggling debug printf statements in C/C++ code. It recursively searches through your codebase to find debug logging statements and allows you to enable (`off`) or disable (`on`) them with a single command.
+`flop` (flip output) is an interactive command-line tool for managing output statements in C/C++ code. It recursively searches through your codebase to find output statements and allows you to toggle them with an intuitive TUI interface.
 
 [![Build status](https://github.com/Justhiro55/flop/workflows/ci/badge.svg)](https://github.com/Justhiro55/flop/actions)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
 ### Features
 
+* **Interactive by default** - Beautiful TUI for selecting specific statements with file navigation
 * **Fast and recursive** - Processes entire directory trees including subdirectories
-* **Dry run mode** - Preview changes without modifying files
-* **Interactive selection** - Choose specific statements to process with arrow keys and spacebar
-* **Safe and reversible** - Disable debug logs for production (`on`), enable them for debugging (`off`)
-* **Smart detection** - Automatically detects printf-family functions and C++ streams containing "debug" or "DEBUG" keywords
-* **Flexible filtering** - Use `--all` flag to detect all output functions, not just debug statements
+* **Flexible filtering** - Detects all output functions by default, or use `--debug` to filter by keyword
+* **Preview mode** - Preview changes without modifying files with `--preview`
+* **Safe and reversible** - Disable output for production (`on`), enable for debugging (`off`)
+* **Smart detection** - Automatically detects printf-family functions and C++ streams
 * **Syntax highlighting** - Color-coded output similar to ripgrep for easy reading
-* **Multiple modes** - Comment out, uncomment, or permanently delete debug statements
+* **Multiple modes** - Comment out, uncomment, or permanently delete statements
 
 ### Quick example
 
 ```bash
-# Enable debug output (uncomment) in the current directory
-$ flop off
+# Disable all output (interactive TUI by default)
+$ flop on
 
-# Disable debug output (comment out) in a specific directory
-$ flop on src/
+# Disable only debug output (interactive)
+$ flop on --debug
+
+# Disable all output in batch mode (with confirmation)
+$ flop on --yes
 
 # Preview what would be changed without modifying files
-$ flop off --dry-run src/
+$ flop on --preview src/
 
-# Interactively select which statements to enable
-$ flop off --interactive src/
+# Disable debug output only in batch mode
+$ flop on -dy src/
 
-# Enable ALL output functions (not just debug)
-$ flop off --all src/
-
-# Delete all debug statements permanently
+# Delete all output statements permanently (interactive)
 $ flop delete src/
 
 # Process a single file
-$ flop off main.c
+$ flop on main.c
 ```
 
 ### Screenshot
@@ -76,24 +76,25 @@ sudo cp target/release/flop /usr/local/bin/
 flop <COMMAND> [OPTIONS] [PATH]
 
 Commands:
-  off      Uncomment debug printf statements (enable debug output)
-  on       Comment out debug printf statements (disable debug output)
-  delete   Delete debug printf statements permanently
+  off      Uncomment output statements (enable output)
+  on       Comment out output statements (disable output)
+  delete   Delete output statements permanently
 
 Arguments:
   [PATH]  Path to file or directory (defaults to current directory if not specified)
 
 Options:
-  -y, --yes          Skip confirmation prompt
-  -a, --all          Detect all output functions, not just debug statements
-  -i, --interactive  Interactive mode for selecting specific statements
-  -d, --dry-run      Dry run mode - show what would be changed without modifying files
-  -h, --help         Print help
+  -d, --debug    Only process output statements containing 'debug' keyword
+  -y, --yes      Skip interactive selection (batch mode, confirmation still required)
+  -p, --preview  Preview mode - show what would be changed without modifying files
+  -h, --help     Print help
 ```
 
 ### How it works
 
-`flop` searches for C/C++ output functions where the string or stream contains the keyword "debug" or "DEBUG" (case-sensitive). This includes:
+By default, `flop` searches for **all** C/C++ output functions in your codebase. Use the `--debug` flag to filter only statements containing "debug" or "DEBUG" keywords.
+
+Detected output functions include:
 - C standard I/O functions (printf family, puts family, write, perror)
 - C++ stream operators (std::cout, std::cerr, std::clog)
 
@@ -121,123 +122,118 @@ C++ streams:
 
 ### Examples
 
-#### Enable debug logs in current directory
+#### Interactive mode (default)
+
+By default, `flop` opens an interactive TUI where you can select which statements to process:
 
 ```bash
-flop off
+# Disable all output statements (interactive)
+flop on
+
+# Navigate with arrow keys or hjkl
+# Toggle selection with Space/Tab
+# Navigate between files with Left/Right arrows
+# Press Enter to confirm, Esc/q to cancel
 ```
 
-#### Enable debug logs in a specific directory
+#### Disable output in current directory
 
 ```bash
+# Interactively disable all output
+flop on
+
+# Disable only debug output (interactive)
+flop on --debug
+```
+
+#### Enable output in a specific directory
+
+```bash
+# Interactively enable all output
 flop off src/
+
+# Enable only debug output (interactive)
+flop off --debug src/
 ```
 
-#### Disable debug logs for production
+#### Batch mode with --yes flag
+
+Use `-y` or `--yes` to skip interactive selection and process all matched statements (confirmation still required):
 
 ```bash
-flop on src/
+# Disable all output in batch mode
+flop on --yes
+
+# Disable debug output only in batch mode
+flop on -dy src/
+
+# Enable all output in batch mode
+flop off -y
 ```
 
 #### Process a single file
 
 ```bash
-flop off main.c
+# Interactive mode
+flop on main.c
+
+# Batch mode
+flop on -y main.c
 ```
 
-#### Delete debug logs permanently
+#### Delete statements permanently
 
 ```bash
+# Interactive deletion
 flop delete src/
-```
 
-**Warning**: This permanently removes debug statement lines from your files. Use with caution!
-
-#### Non-interactive mode (skip confirmation)
-
-Use `-y` or `--yes` flag to skip the confirmation prompt, useful for scripts and automation:
-
-```bash
-# Enable debug output without confirmation
-flop off --yes
-
-# Delete without confirmation (use with caution!)
+# Batch deletion (confirmation required)
 flop delete -y src/
 ```
 
-#### Cancel operation
+**Warning**: This permanently removes statement lines from your files. Use with caution!
 
-When prompted, type `n` to cancel without making changes:
-
-```
-Do you want to enable (uncomment) these statements? (y/n): n
-Operation cancelled.
-```
-
-#### Dry run mode with --dry-run flag
+#### Preview mode with --preview flag
 
 Preview what would be changed without actually modifying any files:
 
 ```bash
-# See what would be enabled without making changes
-flop off --dry-run src/
+# Preview changes (interactive)
+flop on --preview src/
 
-# Example output:
-Found 12 debug statement(s):
-...
-[DRY RUN] Would enable (uncomment) 12 statement(s).
+# Preview in batch mode
+flop on -yp src/
+
+# Preview debug output only
+flop on -dp src/
 ```
 
-Dry run mode automatically skips confirmation prompts and never modifies files. It's useful for:
+Preview mode never modifies files. It's useful for:
 - Checking what statements will be affected before committing
-- Verifying detection patterns with `--all` flag
+- Verifying detection patterns
 - Safely exploring the tool's behavior
 
-You can combine with other flags:
-```bash
-# Dry run with all output functions
-flop off --dry-run --all src/
+#### Filter debug output with --debug flag
 
-# Dry run with interactive selection
-flop off --dry-run --interactive src/
-```
-
-#### Detect all output functions with --all flag
-
-By default, `flop` only detects output functions containing "debug" or "DEBUG" keywords. Use the `--all` flag to detect all output functions regardless of content:
+By default, `flop` detects **all** output functions. Use `--debug` to filter only statements containing "debug" or "DEBUG" keywords:
 
 ```bash
-# Enable ALL printf/cout statements, not just debug ones
-flop off --all src/
+# Process only debug output (interactive)
+flop on --debug
 
 # This will detect:
-# - printf("debug: message") ← debug statement
-# - printf("Regular message") ← also detected with --all
-# - std::cout << "Any message" ← also detected with --all
+# - printf("debug: message") ← detected
+# - printf("Regular message") ← NOT detected with --debug
+# - std::cout << "DEBUG: xyz" ← detected
 ```
 
-This is useful for enabling all logging during debugging sessions.
+#### Cancel operation
 
-#### Interactive mode with --interactive flag
+When prompted for confirmation, type `n` to cancel without making changes:
 
-Use interactive mode to selectively choose which statements to process:
-
-```bash
-# Interactively select which debug statements to enable
-flop off --interactive src/
-
-# You'll see a list of all matches with:
-# - Arrow keys to navigate
-# - Space to toggle selection
-# - Enter to confirm
-# - Ctrl-C or q to cancel
 ```
-
-Interactive mode works with all commands (`off`, `on`, `delete`) and can be combined with `--all`:
-
-```bash
-# Interactively select from ALL output functions to enable
-flop off --interactive --all src/
+Do you want to disable (comment out) these statements? (y/n): n
+Operation cancelled.
 ```
 
 ### Building
@@ -282,14 +278,15 @@ You can also test with the `sample/` directory which contains more comprehensive
 
 ### Why use flop?
 
-* **Speed up your workflow** - No need to manually toggle debug statements
-* **Avoid mistakes** - Dry run mode and interactive selection prevents accidental changes
-* **Clean commits** - Easily disable debug logs before committing (`flop on`)
-* **Quick debugging** - Enable all debug logs when investigating issues (`flop off`)
-* **Production cleanup** - Permanently delete debug statements with the delete command
-* **Safe exploration** - Use `--dry-run` to preview changes before applying them
-* **Selective control** - Use interactive mode to choose exactly which statements to process
-* **Comprehensive detection** - Use `--all` flag to find all output functions
+* **Speed up your workflow** - No need to manually toggle output statements
+* **Interactive by default** - Beautiful TUI with file navigation makes selection intuitive
+* **Avoid mistakes** - Preview mode and confirmation prompts prevent accidental changes
+* **Clean commits** - Easily disable output before committing (`flop on`)
+* **Quick debugging** - Enable output when investigating issues (`flop off`)
+* **Production cleanup** - Permanently delete statements with the delete command
+* **Safe exploration** - Use `--preview` to preview changes before applying them
+* **Flexible filtering** - Process all output or filter by debug keyword with `--debug`
+* **Batch automation** - Use `--yes` flag for scripts while keeping confirmation
 
 ### Why not use flop?
 
