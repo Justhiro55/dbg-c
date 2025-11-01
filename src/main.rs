@@ -2,8 +2,8 @@ use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
-use flop::cli::{Cli, Commands};
-use flop::processor::{process_path, process_path_delete};
+use flop_cli::cli::{Cli, Commands};
+use flop_cli::processor::{process_path, process_path_delete};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
