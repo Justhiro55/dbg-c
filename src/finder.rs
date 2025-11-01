@@ -14,15 +14,16 @@ pub fn find_debug_printfs(
     let mut matches = Vec::new();
 
     // Pattern to match C printf-like functions (multiline support with (?s))
+    // Match from function name to closing paren, then optional whitespace and semicolon
     let c_functions_pattern = if detect_all {
         // Match all output functions regardless of content
         Regex::new(
-            r"(?s)(printf|fprintf|sprintf|snprintf|printf_debug|dprintf|puts|fputs|fputc|putchar|fputchar|write|perror)\s*\([^;]*?;",
+            r"(?s)(printf|fprintf|sprintf|snprintf|printf_debug|dprintf|puts|fputs|fputc|putchar|fputchar|write|perror)\s*\([^)]*\)\s*;",
         )?
     } else {
         // Match only those with "debug" or "DEBUG"
         Regex::new(
-            r"(?s)(printf|fprintf|sprintf|snprintf|printf_debug|dprintf|puts|fputs|fputc|putchar|fputchar|write|perror)\s*\([^;]*?(debug|DEBUG)[^;]*?;",
+            r"(?s)(printf|fprintf|sprintf|snprintf|printf_debug|dprintf|puts|fputs|fputc|putchar|fputchar|write|perror)\s*\([^)]*?(debug|DEBUG)[^)]*\)\s*;",
         )?
     };
 
@@ -63,9 +64,13 @@ pub fn find_debug_printfs(
         for cap in c_functions_pattern.find_iter(&content) {
             let match_str = cap.as_str();
             let start_offset = cap.start();
+            let end_offset = cap.end();
 
-            // Calculate line number from byte offset
-            let line_number = content[..start_offset].lines().count() + 1;
+            // Calculate line numbers from byte offsets
+            // Count newlines before the start position, then add 1
+            let line_number = content[..start_offset].matches('\n').count() + 1;
+            // For end line, count newlines up to the end position
+            let end_line_number = content[..end_offset].matches('\n').count() + 1;
 
             // Get the line content (for display purposes, we'll get the first line of the match)
             let line_start_offset = content[..start_offset].rfind('\n').map(|pos| pos + 1).unwrap_or(0);
@@ -78,6 +83,7 @@ pub fn find_debug_printfs(
                 matches.push(Match {
                     file_path: file_path.clone(),
                     line_number,
+                    end_line_number,
                     line_content: match_str.replace('\n', " ").trim().to_string(),
                 });
             }
@@ -87,9 +93,13 @@ pub fn find_debug_printfs(
         for cap in cpp_stream_pattern.find_iter(&content) {
             let match_str = cap.as_str();
             let start_offset = cap.start();
+            let end_offset = cap.end();
 
-            // Calculate line number from byte offset
-            let line_number = content[..start_offset].lines().count() + 1;
+            // Calculate line numbers from byte offsets
+            // Count newlines before the start position, then add 1
+            let line_number = content[..start_offset].matches('\n').count() + 1;
+            // For end line, count newlines up to the end position
+            let end_line_number = content[..end_offset].matches('\n').count() + 1;
 
             // Get the line content
             let line_start_offset = content[..start_offset].rfind('\n').map(|pos| pos + 1).unwrap_or(0);
@@ -102,6 +112,7 @@ pub fn find_debug_printfs(
                 matches.push(Match {
                     file_path: file_path.clone(),
                     line_number,
+                    end_line_number,
                     line_content: match_str.replace('\n', " ").trim().to_string(),
                 });
             }

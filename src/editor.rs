@@ -23,6 +23,8 @@ pub fn apply_changes(matches: &[Match], uncomment: bool) -> Result<()> {
         sorted_matches.sort_by(|a, b| b.line_number.cmp(&a.line_number));
 
         for m in sorted_matches {
+            // For multiline statements, only comment/uncomment the first line
+            // This will effectively disable/enable the entire statement
             let idx = m.line_number - 1;
             if idx < lines.len() {
                 if uncomment {
@@ -59,10 +61,12 @@ pub fn delete_changes(matches: &[Match]) -> Result<()> {
         let mut sorted_matches = file_matches;
         sorted_matches.sort_by(|a, b| b.line_number.cmp(&a.line_number));
 
-        // Collect line numbers to delete
+        // Collect line numbers to delete (all lines from start to end of each statement)
         let mut lines_to_delete: HashSet<usize> = HashSet::new();
         for m in sorted_matches {
-            lines_to_delete.insert(m.line_number - 1);
+            for line_num in m.line_number..=m.end_line_number {
+                lines_to_delete.insert(line_num - 1);
+            }
         }
 
         // Filter out lines to delete
