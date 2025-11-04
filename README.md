@@ -3,7 +3,7 @@
 [![Build status](https://github.com/Justhiro55/flop/workflows/ci/badge.svg)](https://github.com/Justhiro55/flop/actions)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
-**Flip output** is an interactive command-line tool that helps you manage output statements in C/C++ code.
+**Flip output** is an interactive command-line tool that helps you manage output statements in C/C++/Rust code.
 It works by recursively searching your codebase and lets you toggle statements with an intuitive interface.
 
 ![flop interactive mode](docs/flop.png)
@@ -15,7 +15,7 @@ It works by recursively searching your codebase and lets you toggle statements w
 * **Flexible filtering** - Detects all output functions by default, or use `--debug` to filter by keyword
 * **Preview mode** - Preview changes without modifying files with `--preview`
 * **Safe and reversible** - Disable output for production (`on`), enable for debugging (`off`)
-* **Smart detection** - Automatically detects printf-family functions and C++ streams
+* **Smart detection** - Automatically detects printf-family functions, C++ streams, and Rust macros
 * **Syntax highlighting** - Color-coded output similar to ripgrep for easy reading
 * **Multiple modes** - Comment out, uncomment, or permanently delete statements
 
@@ -96,11 +96,12 @@ Options:
 
 ## How it works
 
-By default, `flop` searches for **all** C/C++ output functions in your codebase. Use the `--debug` flag to filter only statements containing "debug" or "DEBUG" keywords.
+By default, `flop` searches for **all** C/C++/Rust output functions in your codebase. Use the `--debug` flag to filter only statements containing "debug" or "DEBUG" keywords.
 
 Detected output functions include:
 - C standard I/O functions (printf family, puts family, write, perror)
 - C++ stream operators (std::cout, std::cerr, std::clog)
+- Rust macros (println!, eprintln!, dbg!, etc.)
 
 **Supported file extensions:**
 - `.c`
@@ -109,6 +110,7 @@ Detected output functions include:
 - `.hpp`
 - `.cc`
 - `.cxx`
+- `.rs`
 
 **Detected functions:**
 
@@ -123,6 +125,11 @@ C++ streams:
 - `std::cout`
 - `std::cerr`
 - `std::clog`
+
+Rust macros:
+- `println!()`, `eprintln!()`
+- `print!()`, `eprint!()`
+- `dbg!()`
 
 ## Examples
 
@@ -294,9 +301,9 @@ You can also test with the `sample/` directory which contains more comprehensive
 
 ## Why not use flop?
 
-* **Language specific** - Only works with C/C++ code
+* **Language specific** - Only works with C/C++/Rust code
 * **Simple pattern matching** - May not catch all debug logging patterns
-* **Printf-based only** - Doesn't work with logging libraries (log4c, spdlog, etc.)
+* **Standard macros only** - Doesn't work with logging libraries (log4c, spdlog, log crate, etc.)
 
 ## License
 
