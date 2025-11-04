@@ -18,7 +18,8 @@ fn main() -> Result<()> {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
             let all = !debug;
             let interactive = !yes;
-            process_path(&target_path, true, false, all, interactive, preview)?;
+            let skip_confirm = yes;
+            process_path(&target_path, true, skip_confirm, all, interactive, preview)?;
         }
         Commands::On {
             path,
@@ -29,7 +30,8 @@ fn main() -> Result<()> {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
             let all = !debug;
             let interactive = !yes;
-            process_path(&target_path, false, false, all, interactive, preview)?;
+            let skip_confirm = yes;
+            process_path(&target_path, false, skip_confirm, all, interactive, preview)?;
         }
         Commands::Delete {
             path,
@@ -40,7 +42,8 @@ fn main() -> Result<()> {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
             let all = !debug;
             let interactive = !yes;
-            process_path_delete(&target_path, false, all, interactive, preview)?;
+            let skip_confirm = yes;
+            process_path_delete(&target_path, skip_confirm, all, interactive, preview)?;
         }
     }
 
