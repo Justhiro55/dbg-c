@@ -101,6 +101,26 @@ jobs:
             exit 1
           fi
 
+          # Test Rust comment/uncomment
+          echo "Testing Rust file..."
+          cp sample/rust/test_basic.rs /tmp/test_rust.rs
+
+          # Test commenting
+          echo "y" | ./target/release/flop on /tmp/test_rust.rs -y
+          if ! diff -q /tmp/test_rust.rs sample/rust/test_basic_commented.rs; then
+            echo "Failed: Commented Rust file doesn't match expected output"
+            diff /tmp/test_rust.rs sample/rust/test_basic_commented.rs
+            exit 1
+          fi
+
+          # Test uncommenting
+          echo "y" | ./target/release/flop off /tmp/test_rust.rs -y
+          if ! diff -q /tmp/test_rust.rs sample/rust/test_basic.rs; then
+            echo "Failed: Uncommented Rust file doesn't match original"
+            diff /tmp/test_rust.rs sample/rust/test_basic.rs
+            exit 1
+          fi
+
           echo "All tests passed!"
 
   rustfmt:
