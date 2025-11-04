@@ -16,7 +16,6 @@ fn main() {
 
     // dbg! with struct fields
     let point = Point { x: 1, y: 2 };
-    dbg!(point.x);
     dbg!(&point);
 }
 

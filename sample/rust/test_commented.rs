@@ -9,13 +9,8 @@ fn main() {
     println!("debug: another commented line");
 
     let x = 10;
-    dbg!(x);
 
     // Multiline commented
-    println!(
-    //     "debug: multiline {}",
-    //     value
-    // );
 
     compute();
 }
