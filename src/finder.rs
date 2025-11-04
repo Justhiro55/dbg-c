@@ -36,6 +36,18 @@ pub fn find_debug_printfs(
         Regex::new(r"(?s)(std::cout|std::cerr|std::clog)\s*<<[^;]*?(debug|DEBUG)[^;]*?;")?
     };
 
+    // Pattern to match Rust macros (multiline support with (?s))
+    // Match macro_name!(...); where ... can contain anything except unbalanced parens
+    let rust_macro_pattern = if detect_all {
+        // Match all Rust output macros regardless of content
+        Regex::new(r"(?s)(println!|eprintln!|print!|eprint!|dbg!)\s*\([^)]*\)\s*;")?
+    } else {
+        // Match dbg! always, and other macros only if they contain "debug" or "DEBUG"
+        Regex::new(
+            r"(?s)dbg!\s*\([^)]*\)\s*;|(println!|eprintln!|print!|eprint!)\s*\([^)]*?(debug|DEBUG)[^)]*\)\s*;",
+        )?
+    };
+
     let comment_pattern = Regex::new(r"^\s*//")?;
 
     let entries: Vec<_> = if path.is_file() {
@@ -49,7 +61,7 @@ pub fn find_debug_printfs(
                     && e.path()
                         .extension()
                         .and_then(|s| s.to_str())
-                        .map(|ext| matches!(ext, "c" | "h" | "cpp" | "hpp" | "cc" | "cxx"))
+                        .map(|ext| matches!(ext, "c" | "h" | "cpp" | "hpp" | "cc" | "cxx" | "rs"))
                         .unwrap_or(false)
             })
             .map(|e| e.path().to_path_buf())
@@ -111,6 +123,45 @@ pub fn find_debug_printfs(
             // Count newlines before the start position, then add 1
             let line_number = content[..start_offset].matches('\n').count() + 1;
             // For end line, count newlines up to the end position
+            let end_line_number = content[..end_offset].matches('\n').count() + 1;
+
+            // Get the line content
+            let line_start_offset = content[..start_offset]
+                .rfind('\n')
+                .map(|pos| pos + 1)
+                .unwrap_or(0);
+            let line_content = content[line_start_offset..]
+                .lines()
+                .next()
+                .unwrap_or("")
+                .to_string();
+
+            // Check if commented
+            let is_commented = comment_pattern.is_match(&line_content);
+
+            if is_commented == find_commented {
+                // Extract original lines for multiline display
+                let multiline_content: Vec<String> =
+                    match_str.lines().map(|s| s.to_string()).collect();
+
+                matches.push(Match {
+                    file_path: file_path.clone(),
+                    line_number,
+                    end_line_number,
+                    line_content: match_str.replace('\n', " ").trim().to_string(),
+                    multiline_content,
+                });
+            }
+        }
+
+        // Find all Rust macro calls
+        for cap in rust_macro_pattern.find_iter(&content) {
+            let match_str = cap.as_str();
+            let start_offset = cap.start();
+            let end_offset = cap.end();
+
+            // Calculate line numbers from byte offsets
+            let line_number = content[..start_offset].matches('\n').count() + 1;
             let end_line_number = content[..end_offset].matches('\n').count() + 1;
 
             // Get the line content
