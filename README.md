@@ -1,5 +1,6 @@
 # flop
 
+![Crates.io](https://img.shields.io/crates/d/flop-cli)
 [![Build status](https://github.com/Justhiro55/flop/workflows/ci/badge.svg)](https://github.com/Justhiro55/flop/actions)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
