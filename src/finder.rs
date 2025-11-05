@@ -74,7 +74,12 @@ pub fn find_debug_printfs(
                     && e.path()
                         .extension()
                         .and_then(|s| s.to_str())
-                        .map(|ext| matches!(ext, "c" | "h" | "cpp" | "hpp" | "cc" | "cxx" | "rs" | "java"))
+                        .map(|ext| {
+                            matches!(
+                                ext,
+                                "c" | "h" | "cpp" | "hpp" | "cc" | "cxx" | "rs" | "java"
+                            )
+                        })
                         .unwrap_or(false)
             })
             .map(|e| e.path().to_path_buf())
