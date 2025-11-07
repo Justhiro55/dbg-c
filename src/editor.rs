@@ -88,8 +88,8 @@ pub fn delete_changes(matches: &[Match]) -> Result<()> {
 fn comment_line(line: &str) -> String {
     // Find the first non-whitespace character and insert // before it
     let trimmed = line.trim_start();
-    let leading_spaces = line.len() - trimmed.len();
-    format!("{}// {}", " ".repeat(leading_spaces), trimmed)
+    let leading_whitespace = &line[..line.len() - trimmed.len()];
+    format!("{}// {}", leading_whitespace, trimmed)
 }
 
 fn uncomment_line(line: &str) -> String {
