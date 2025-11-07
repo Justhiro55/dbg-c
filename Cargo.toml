@@ -1,13 +1,13 @@
 [package]
 name = "flop-cli"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 authors = ["Justhiro55"]
 description = "Interactively flip debug output statements in C/C++/Rust/Java/Go code"
 license = "MIT"
 repository = "https://github.com/Justhiro55/flop"
 readme = "README.md"
-keywords = ["debug", "cpp", "rust", "java", "cli"]
+keywords = ["debug", "output", "comment", "development", "cli"]
 categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
