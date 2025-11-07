@@ -4,7 +4,7 @@
 [![Build status](https://github.com/Justhiro55/flop/workflows/ci/badge.svg)](https://github.com/Justhiro55/flop/actions)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
-**Flip output** is an interactive command-line tool that helps you manage output statements in C/C++/Rust/Java code.
+**Flip output** is an interactive command-line tool that helps you manage output statements in C/C++/Rust/Java/Go code.
 It works by recursively searching your codebase and lets you toggle statements with an intuitive interface.
 
 ![flop interactive mode](docs/flop.png)
@@ -16,7 +16,7 @@ It works by recursively searching your codebase and lets you toggle statements w
 * **Flexible filtering** - Detects all output functions by default, or use `--debug` to filter by keyword
 * **Preview mode** - Preview changes without modifying files with `--preview`
 * **Safe and reversible** - Disable output for production (`on`), enable for debugging (`off`)
-* **Smart detection** - Automatically detects printf-family functions, C++ streams, Rust macros, and Java output statements
+* **Smart detection** - Automatically detects printf-family functions, C++ streams, Rust macros, Java output statements, and Go fmt/log functions
 * **Syntax highlighting** - Color-coded output similar to ripgrep for easy reading
 * **Multiple modes** - Comment out, uncomment, or permanently delete statements
 
@@ -97,13 +97,14 @@ Options:
 
 ## How it works
 
-By default, `flop` searches for **all** C/C++/Rust/Java output functions in your codebase. Use the `--debug` flag to filter only statements containing "debug" or "DEBUG" keywords.
+By default, `flop` searches for **all** C/C++/Rust/Java/Go output functions in your codebase. Use the `--debug` flag to filter only statements containing "debug" or "DEBUG" keywords.
 
 Detected output functions include:
 - C standard I/O functions (printf family, puts family, write, perror)
 - C++ stream operators (std::cout, std::cerr, std::clog)
 - Rust macros (println!, eprintln!, dbg!, etc.)
 - Java output statements (System.out, System.err)
+- Go fmt/log functions (fmt.Println, fmt.Printf, log.Println, etc.)
 
 **Supported file extensions:**
 - `.c`
@@ -114,6 +115,7 @@ Detected output functions include:
 - `.cxx`
 - `.rs`
 - `.java`
+- `.go`
 
 **Detected functions:**
 
@@ -137,6 +139,12 @@ Rust macros:
 Java statements:
 - `System.out.println()`, `System.out.printf()`, `System.out.print()`
 - `System.err.println()`, `System.err.printf()`, `System.err.print()`
+
+Go functions:
+- `fmt.Println()`, `fmt.Printf()`, `fmt.Print()`
+- `fmt.Fprintln()`, `fmt.Fprintf()`, `fmt.Fprint()`
+- `log.Println()`, `log.Printf()`, `log.Print()`
+- `log.Fatal*()`, `log.Panic*()`
 
 ## Examples
 
@@ -308,9 +316,9 @@ You can also test with the `sample/` directory which contains more comprehensive
 
 ## Why not use flop?
 
-* **Language specific** - Only works with C/C++/Rust/Java code
+* **Language specific** - Only works with C/C++/Rust/Java/Go code
 * **Simple pattern matching** - May not catch all debug logging patterns
-* **Standard output only** - Doesn't work with logging libraries (log4c, spdlog, log crate, Log4j, SLF4J, etc.)
+* **Standard output only** - Doesn't work with some logging libraries (log4c, spdlog, SLF4J, etc.)
 
 ## License
 
