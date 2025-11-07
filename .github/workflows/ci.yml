@@ -141,6 +141,26 @@ jobs:
             exit 1
           fi
 
+          # Test Go comment/uncomment
+          echo "Testing Go file..."
+          cp sample/go/test_basic.go /tmp/test_go.go
+
+          # Test commenting
+          echo "y" | ./target/release/flop on /tmp/test_go.go -y
+          if ! diff -q /tmp/test_go.go sample/go/test_basic_commented.go; then
+            echo "Failed: Commented Go file doesn't match expected output"
+            diff /tmp/test_go.go sample/go/test_basic_commented.go
+            exit 1
+          fi
+
+          # Test uncommenting
+          echo "y" | ./target/release/flop off /tmp/test_go.go -y
+          if ! diff -q /tmp/test_go.go sample/go/test_basic.go; then
+            echo "Failed: Uncommented Go file doesn't match original"
+            diff /tmp/test_go.go sample/go/test_basic.go
+            exit 1
+          fi
+
           echo "All tests passed!"
 
   rustfmt:
