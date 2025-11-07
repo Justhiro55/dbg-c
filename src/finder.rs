@@ -61,6 +61,20 @@ pub fn find_debug_printfs(
         )?
     };
 
+    // Pattern to match Go output statements (multiline support with (?s))
+    // Go doesn't require semicolons, so we match just the closing paren
+    let go_pattern = if detect_all {
+        // Match all Go output statements regardless of content
+        Regex::new(
+            r"(?s)(fmt\.Println|fmt\.Printf|fmt\.Print|fmt\.Fprintln|fmt\.Fprintf|fmt\.Fprint|log\.Println|fmt\.Printf|log\.Print|log\.Fatal|log\.Fatalf|log\.Fatalln|log\.Panic|log\.Panicf|log\.Panicln)\s*\([^)]*\)",
+        )?
+    } else {
+        // Match only those with "debug" or "DEBUG"
+        Regex::new(
+            r"(?s)(fmt\.Println|fmt\.Printf|fmt\.Print|fmt\.Fprintln|fmt\.Fprintf|fmt\.Fprint|log\.Println|log\.Printf|log\.Print|log\.Fatal|log\.Fatalf|log\.Fatalln|log\.Panic|log\.Panicf|log\.Panicln)\s*\([^)]*?(debug|DEBUG)[^)]*\)",
+        )?
+    };
+
     let comment_pattern = Regex::new(r"^\s*//")?;
 
     let entries: Vec<_> = if path.is_file() {
@@ -77,7 +91,7 @@ pub fn find_debug_printfs(
                         .map(|ext| {
                             matches!(
                                 ext,
-                                "c" | "h" | "cpp" | "hpp" | "cc" | "cxx" | "rs" | "java"
+                                "c" | "h" | "cpp" | "hpp" | "cc" | "cxx" | "rs" | "java" | "go"
                             )
                         })
                         .unwrap_or(false)
@@ -213,6 +227,45 @@ pub fn find_debug_printfs(
 
         // Find all Java output statements
         for cap in java_pattern.find_iter(&content) {
+            let match_str = cap.as_str();
+            let start_offset = cap.start();
+            let end_offset = cap.end();
+
+            // Calculate line numbers from byte offsets
+            let line_number = content[..start_offset].matches('\n').count() + 1;
+            let end_line_number = content[..end_offset].matches('\n').count() + 1;
+
+            // Get the line content
+            let line_start_offset = content[..start_offset]
+                .rfind('\n')
+                .map(|pos| pos + 1)
+                .unwrap_or(0);
+            let line_content = content[line_start_offset..]
+                .lines()
+                .next()
+                .unwrap_or("")
+                .to_string();
+
+            // Check if commented
+            let is_commented = comment_pattern.is_match(&line_content);
+
+            if is_commented == find_commented {
+                // Extract original lines for multiline display
+                let multiline_content: Vec<String> =
+                    match_str.lines().map(|s| s.to_string()).collect();
+
+                matches.push(Match {
+                    file_path: file_path.clone(),
+                    line_number,
+                    end_line_number,
+                    line_content: match_str.replace('\n', " ").trim().to_string(),
+                    multiline_content,
+                });
+            }
+        }
+
+        // Find all Go output statements
+        for cap in go_pattern.find_iter(&content) {
             let match_str = cap.as_str();
             let start_offset = cap.start();
             let end_offset = cap.end();
